@@ -116,8 +116,8 @@ def setup():
     copyout_enabled = config.get_boolean('copyout', 'enabled')
     if copyout_enabled:
         target_dir = config.get_string('copyout', 'target_dir')
-        copyout_start_year = config.get_int('copyout', 'verify_start_year')
-        copyout_end_year = config.get_int('copyout', 'verify_end_year')
+        copyout_start_year = config.get_int('copyout', 'copyout_start_year')
+        copyout_end_year = config.get_int('copyout', 'copyout_end_year')
         for cur_year in range(copyout_start_year, copyout_end_year):
             copyout = CopyOut(cur_year)
             if config.get_boolean('copyout', 'copyout_pdfs'):

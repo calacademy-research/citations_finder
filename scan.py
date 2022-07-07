@@ -7,12 +7,12 @@ from db_connection import DBConnection
 from doi_entry import DoiFactory
 
 
-class Scan():
+class Scan:
     collection_tag_regex = '(([ \(\[])+|^)(?i)cas(ent)*(c)*(iz)*[: ]+[ ]*[0-9\-]+'
 
     def __init__(self, doi_object=None, doi_string=None):
         self.config = Config()
-        self.text_directory = self.config.get_string('scan','scan_text_directory')
+        self.text_directory = self.config.get_string('scan', 'scan_text_directory')
         if not os.path.exists(self.text_directory):
             os.mkdir(self.text_directory)
             print(f"Created directory to store interpolated text files: {self.text_directory}")
@@ -103,7 +103,7 @@ class Scan():
     def _convert_pdf(self, force=False):
         doi_basename = os.path.basename(self.doi_object.full_path)
         doi_basename = doi_basename.rsplit(".", 1)[0]
-        doi_textfile = self.text_directory + doi_basename + ".txt"
+        doi_textfile = os.path.join(self.text_directory, doi_basename + ".txt")
         if self.broken_converter:
             return False
         if not os.path.exists(doi_textfile) or force is True:
@@ -134,7 +134,7 @@ class Scan():
             ("j. fong", 200),
             ("j fong", 200),
             ("jon fong", 200),
-            ("d. Catania", 200), #studi di catania, italy received: june 30, 2016
+            ("d. Catania", 200),  # studi di catania, italy received: june 30, 2016
             ("d Catania", 200),
             ("w. pulawski", 100),
             ("w pulawski", 100),
@@ -161,7 +161,7 @@ class Scan():
                                     ("CAS ORN", 100),
                                     ("chinese", -20),
                                     ("Chinese Academy of Sciences", -100),
-                                    ("institute of botany cas",-200), # https://www.bc.cas.cz/en/l
+                                    ("institute of botany cas", -200),  # https://www.bc.cas.cz/en/l
                                     ("biology centre cas", -200)]  # https://www.bc.cas.cz/en/
         return string_set_pre_reference
 
@@ -172,7 +172,7 @@ class Scan():
         retval.append(('((?i)california academy of science[s]?)', 200))
         for regex_tuple in Scan._get_scored_strings() + Scan._get_collection_manager_names():
             regex = regex_tuple[0].lower()
-            retval.append((regex,regex_tuple[1]))
+            retval.append((regex, regex_tuple[1]))
 
         return retval
 
@@ -200,7 +200,6 @@ class Scan():
 
         regex = '((?i)southern california academy of science[s]?)'
         self._scan_with_regex(regex, -200, ok_after_references=False)
-
 
         collection_manager_names = Scan._get_collection_manager_names()
 
