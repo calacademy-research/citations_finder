@@ -1,5 +1,6 @@
 .idea
-pdf
+txt/
+pdf/
 config.ini
 unpaywall_cache
 doi_database.db

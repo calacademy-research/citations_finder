@@ -1,8 +1,8 @@
 import re
 import subprocess
 import os
+from config import Config
 
-TXT_DIRECTORY = "./txt/"
 from db_connection import DBConnection
 from doi_entry import DoiFactory
 
@@ -11,6 +11,11 @@ class Scan():
     collection_tag_regex = '(([ \(\[])+|^)(?i)cas(ent)*(c)*(iz)*[: ]+[ ]*[0-9\-]+'
 
     def __init__(self, doi_object=None, doi_string=None):
+        self.config = Config()
+        self.text_directory = self.config.get_string('scan','scan_text_directory')
+        if not os.path.exists(self.text_directory):
+            os.mkdir(self.text_directory)
+            print(f"Created directory to store interpolated text files: {self.text_directory}")
         if doi_object is None and doi_string is None:
             raise NotImplementedError("Provide an object or a string")
         if doi_string is not None and doi_object is None:
@@ -90,7 +95,7 @@ class Scan():
         command = f"/usr/local/bin/pdftotext"
         pwd = os.getcwd()
         filename = self.doi_object.get_filename_from_doi_entry()
-        txt_file = f"{TXT_DIRECTORY}{filename.strip('.pdf')}.txt"
+        txt_file = f"{self.text_directory}/{filename.strip('.pdf')}.txt"
 
         pdf_file = f"{pwd}/{self.doi_object.full_path}"
         subprocess.call([command, pdf_file, txt_file])
@@ -98,7 +103,7 @@ class Scan():
     def _convert_pdf(self, force=False):
         doi_basename = os.path.basename(self.doi_object.full_path)
         doi_basename = doi_basename.rsplit(".", 1)[0]
-        doi_textfile = TXT_DIRECTORY + doi_basename + ".txt"
+        doi_textfile = self.text_directory + doi_basename + ".txt"
         if self.broken_converter:
             return False
         if not os.path.exists(doi_textfile) or force is True:
