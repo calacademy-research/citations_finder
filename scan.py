@@ -117,7 +117,6 @@ class Scan():
             self.textfile_path = doi_textfile
         return True
 
-    # TODO: Check for duplicate paper titles
     @classmethod
     def _get_collection_manager_names(cls):
         collection_manager_names = [
@@ -178,7 +177,6 @@ class Scan():
         return retval
 
     def scan(self, clear_existing_records=False):
-        # TODO: chop everytrhing after "references"
         # print(f"Scanning: {self.textfile_path}")
         if self._convert_pdf() is False:
             # print(f"Missing PDF, not scanning: {self.textfile_path}")
@@ -238,8 +236,7 @@ class Scan():
 
     def _scan_with_regex(self, regex, score_per_line, ok_after_references, do_score=True):
         results = []
-        # TODO check for wraparound case - if "CAS" is on the first line and digit is on the second.
-        # TODO: make each paragraph a line
+
         # print(f"Scanning with regex: {regex}")
         found_count = 0
         cur_line = None

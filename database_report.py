@@ -3,7 +3,7 @@ from db_connection import DBConnection
 
 
 class DatabaseReport:
-    categories=['downloaded','missing','total']
+    categories = ['downloaded', 'missing', 'total']
 
     def __init__(self, start_year=None, end_year=None, journal=None):
         self.good_download_count = 0
@@ -35,7 +35,7 @@ class DatabaseReport:
             retval += f""" journal_title='{journal}'"""
         return retval
 
-    def _load_dois(self,journal=None):
+    def _load_dois(self, journal=None):
         select_dois = f"""select * from dois"""
         select_dois += self._sql_date_suffix(False)
         if journal is not None:
@@ -62,7 +62,7 @@ class DatabaseReport:
     #     sql += self._sql_date_suffix()
     #     sql += self._sql_journal_suffix(journal)
 
-        # return DBConnection.execute_query(sql)[0][0]
+    # return DBConnection.execute_query(sql)[0][0]
 
     def _get_not_downloaded(self, journal=None):
         sql = f"""select count(*) from dois where downloaded=FALSE"""
@@ -77,10 +77,7 @@ class DatabaseReport:
     #     sql += self._sql_journal_suffix(journal)
     #     return DBConnection.execute_query(sql)[0][0]
 
-
-
-    # TODO: report this out as a populated class that can self print
-    def report(self,journal=None,issn=None,summary=True):
+    def report(self, journal=None, issn=None, summary=True):
 
         str = ""
         if summary:
@@ -99,11 +96,10 @@ class DatabaseReport:
         journal_stats = {}
         for journal in journals:
             journal = journal[0]
-            dict={'journal':journal}
+            dict = {'journal': journal}
             for category in DatabaseReport.categories:
                 dict[category] = 0
             journal_stats[journal] = dict
-
 
         for doi in self.dois:
             journal = doi.journal_title
@@ -124,22 +120,22 @@ class DatabaseReport:
         from tabulate import tabulate
         table = []
 
-        for journal,stats in journal_stats.items():
+        for journal, stats in journal_stats.items():
             row = []
             for statname, stat in stats.items():
                 row.append(stat)
             if stats['downloaded'] > 0:
-                percent = stats['downloaded']/stats['total'] * 100
+                percent = stats['downloaded'] / stats['total'] * 100
                 # row.append(f"{percent:.0f}%")
                 row.append(percent)
             else:
                 row.append(0)
             table.append(row)
-        sorted_table = sorted(table,key=lambda x: x[4])
-        for i,row in enumerate(sorted_table):
+        sorted_table = sorted(table, key=lambda x: x[4])
+        for i, row in enumerate(sorted_table):
             percent_string = f"{row[4]:.0f}%"
             sorted_table[i][4] = percent_string
 
-        str += tabulate(sorted_table, headers=['Journal']+DatabaseReport.categories+['%'])
+        str += tabulate(sorted_table, headers=['Journal'] + DatabaseReport.categories + ['%'])
 
         return str

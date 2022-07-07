@@ -27,7 +27,6 @@ def download_single_doi(doi, config):
         downloaders.download(doi_entry)
 
 
-# TODO: nord vpn client to rotate source IP?
 def retry_failed_unpaywall_links(config):
     print("Retrying failed unpaywall downloads")
     select_dois = f"""select * from dois, unpaywall_downloader where downloaded=False 
@@ -52,7 +51,6 @@ def setup_tables():
 def setup():
     config = Config()
     setup_tables()
-    #  TODO: reporting - graph for coverage of a given publication (hits/year)
 
     if config.get_boolean('general', 'download_single_doi_mode'):
         download_single_doi(config.get_string('general', 'download_single_doi'), config)

@@ -109,9 +109,29 @@ Currently only tested on mac. create a virtual environment using the requirement
 
  * scan for collection ids should be "Scan for specimen IDs" 
 
+ * We're hitting a lot of ddos protections. Detect this condition and Integrate with a VPN (ala nord vpn) 
+   to auto rotate the origin IP to see if this gets around the ddos wall. 
+
  * put custom phrases to scan for (and scoring) into config.ini
  
  * archive.org downloader
+
+ * in scan: Check for duplicate paper titles
+
+ * in scan: chop everything after "references"
+
+ * In scan: check for wraparound case - if "CAS" is on the first line and digit is on the second. (This 
+   may be already done; verify)
+
+ * In scan: make each paragraph a line (may be already done? verify)
+
+ * unpaywall_downloader:  "download_link" doesn't work very well. Most of the time this links to an 
+   html version of the paper. Currently only handles direct-to-PDF links. However, it's hard to tell the 
+   differnce between an html-ified paper and a "can't find" or a ddos protection page. Possible solutions: 
+   look for the existance of a "download pdf" button. This might indicate that it is indeed an html-ified 
+   paper (we'd need to support that, but it's actually a better data source than pdf->text) or actually 
+   use said button's URL to download the true PDF. 
+
 
  * Use proper logging and log levels - everything is prints now.
 

@@ -7,7 +7,8 @@ class ScanDatabase(Utils):
 
     # "reset" causes a the whole scan database to be rebuilt.
     # required most of the time; it won't pick up new PDFs without it
-    # TODO: Command to scan all elements to ensure they have a scan object
+    # TODO: Command to scan all elements to ensure they have a scan object (7/7/22: this meant
+    # something to me when I wrote it, but no clue now. Expand or remove this comment.)
     def __init__(self, doi_db, reset_scan_database=False):
         super().__init__()
         if reset_scan_database:

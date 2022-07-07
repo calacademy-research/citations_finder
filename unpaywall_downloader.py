@@ -68,7 +68,6 @@ class UnpaywallDownloader(Downloader, Utils):
         self._update_unpaywall_database(doi_entry.doi)
         return results
 
-    #  TODO: Currently only handles direct-to-PDF links. Most aren't; smart pdf button finder?
     def _download_link(self, doi_entry):
         if 'link' in doi_entry.details:
             URL = doi_entry.details['link'][0]['URL']
