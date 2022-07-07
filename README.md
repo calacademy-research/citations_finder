@@ -59,21 +59,37 @@ save directory to something specific while running in this mode.
 
 
 TODO: pdf directory is flat; should with one directory per issn, at least, and possibly per year.
+
 TODO: format this file to MD
+
 TODO: archive.org downloader
+
 TODO: Use proper logging and log levels
+
 TODO: Get specimen count compare to pubs on a per instutiuion ratio
+
 TODO: Get DOI metadata from datacite: https://support.datacite.org/docs/api-queries
+
 TODO note known failure case - we don't always OCR 90 degree rotated tables
+
 TODO parallelize the scan
+
 TODO: are keywords available through crossref.org? scan them for scores
+
 TODO: once we ID collections papers, calculate their citation impact
+
 TODO: can google scholar do smarter searches for possible references?
+
 TODO: web interface that supports uploading pdf/dois (bulk?)
+
 TODO: ResearchGate or Academia.edu have many papers that have been uploaded by authors.
+
 TODO: Impact factor for our references per crossref?
+
 TODO: gather metrics from antweb
 
-#  TODO: Scan doi repo for string, compare to google scholar
-#  TODO: Scan microsoft academic for string, compare to google scholar
-# TODO: Support adding PDFs from journals that lack DOIs. e.g.: Herpetological Conservation & Biology
+TODO: Scan doi repo for string, compare to google scholar
+
+TODO: Scan microsoft academic for string, compare to google scholar
+
+TODO: Support adding PDFs from journals that lack DOIs. e.g.: Herpetological Conservation & Biology

@@ -39,8 +39,9 @@ class UnpaywallDownloader(Downloader, Utils):
     def download(self, doi_entry):
         self.most_recent_firefox_failure = None
         self.most_recent_url = None
+        open_url = None
         print(f"Download unpaywall:{doi_entry}")
-        sql = f"select most_recent_attempt from unpaywall_downloader where doi='{doi_entry.doi}'"
+        sql = f"select most_recent_attempt, open_url from unpaywall_downloader where doi='{doi_entry.doi}'"
         results = DBConnection.execute_query(sql)
         if len(results) == 0:
             self.most_recent_attempt = None
@@ -48,18 +49,22 @@ class UnpaywallDownloader(Downloader, Utils):
             self.most_recent_attempt = results[0][0]
             # '2022-07-02 22:00:39.132010'
             self.most_recent_attempt = datetime.strptime(self.most_recent_attempt, self.DATETIME_FORMAT)
+            open_url = results[0][1]
+        retry_only_failures_with_link = self.config.get_boolean('unpaywall_downloader', 'retry_only_failures_with_link')
 
-        if not self.meets_datetime_requrements('unpaywall_downloader', self.most_recent_attempt):
-            print(
-                f"Attempted too recently; last attempt was {self.most_recent_attempt} cutoff is {self.config.get_string('unpaywall_downloader', 'retry_after_datetime')}")
-            return False
+
+        if not retry_only_failures_with_link and open_url is not None:
+            if not self.meets_datetime_requrements('unpaywall_downloader', self.most_recent_attempt):
+                print(
+                    f"Attempted too recently; last attempt was {self.most_recent_attempt} cutoff is {self.config.get_string('unpaywall_downloader', 'retry_after_datetime')}")
+                return False
         if self.config.get_boolean("unpaywall_downloader", "attempt_direct_link"):
             print("Attempting direct link...")
             if self._download_link(doi_entry):
                 doi_entry.downloaded = True
 
                 return True
-        results = self._download_unpaywall(doi_entry)
+        results = self._download_unpaywall(doi_entry,open_url)
         self._update_unpaywall_database(doi_entry.doi)
         return results
 
@@ -80,7 +85,7 @@ class UnpaywallDownloader(Downloader, Utils):
             return False
         return True
 
-    def _download_unpaywall(self, doi_entry):
+    def _download_unpaywall(self, doi_entry, open_url):
         print(f"Attempting unpaywall... @{datetime.now()}")
         use_firefox_downloader = self.config.get_boolean('unpaywall_downloader', 'firefox_downloader')
         retry_firefox_failure = self.config.get_boolean('unpaywall_downloader', 'retry_firefox_failure')
@@ -91,8 +96,11 @@ class UnpaywallDownloader(Downloader, Utils):
             # print(f"Downloading to: {self.PDF_DIRECTORY}/{filename}")
             email = self.config.get_string("downloaders","header_email")
             UnpywallCredentials(email)
-
-            self.most_recent_url = Unpywall.get_pdf_link(doi_entry.doi)
+            if open_url is None:
+                self.most_recent_url = Unpywall.get_pdf_link(doi_entry.doi)
+            else:
+                print(f"re-using url from last unpaywall pull: {open_url}")
+                self.most_recent_url = open_url
 
             if self.most_recent_url is None:
                 print(f"Not available through unpaywall.")
@@ -119,13 +127,13 @@ class UnpaywallDownloader(Downloader, Utils):
             print(f"Not available through unpaywall... {e}")
             return False
         except TypeError as e:
-            print(f"Unpaywall redirected to an html link, likely a redirect that requires a browser: {e} {url}")
+            print(f"Unpaywall redirected to an html link, likely a redirect that requires a browser: {e} {self.most_recent_url}")
             return False
         except TimeoutError as e:
-            print(f"Unpaywall timeout error attempting download: {e} {url}")
+            print(f"Unpaywall timeout error attempting download: {e} {self.most_recent_url}")
             return False
         except requests.exceptions.ChunkedEncodingError as e:
-            print(f"Unpaywall encoding error attempting download: {e} {url}")
+            print(f"Unpaywall encoding error attempting download: {e} {self.most_recent_url}")
             return False
         except Exception as e:
             traceback.print_exc()

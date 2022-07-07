@@ -26,4 +26,8 @@ class Config():
         return self.config.getboolean(section, param)
 
     def get_list(self, section, param):
-        return json.loads(self.get_string(section, param))
+        results = self.get_string(section, param)
+        if len(results) == 0:
+            return None
+        else:
+            return json.loads(self.get_string(section, param))

@@ -143,7 +143,7 @@ class Downloader(ABC, Utils):
 
         # driver.close()
 
-        firefox_download_folder = self.config.get_string("unpaywall_downloader", "firefox_save_directory")
+        firefox_download_folder = self.config.get_string("downloaders", "firefox_save_directory")
 
         list_of_files = glob.glob(f'{firefox_download_folder}/*')
         try:
