@@ -65,6 +65,8 @@ class CopyOut(Utils):
         filehandle.write("\n")
 
     def dump_file_tsv(self, path="./"):
+        if not os.path.exists(path):
+            os.makedirs(path)
         db = DoiDatabase(start_year=self.year,
                          end_year=self.year,
                          setup=False)
@@ -74,6 +76,8 @@ class CopyOut(Utils):
             self.write_match(cur_match, fh, db)
 
     def dump_antweb(self, path="./"):
+        if not os.path.exists(path):
+            os.makedirs(path)
         db = DoiDatabase(start_year=self.year,
                          end_year=self.year,
                          setup=False)

@@ -53,7 +53,7 @@ class UnpaywallDownloader(Downloader, Utils):
         retry_only_failures_with_link = self.config.get_boolean('unpaywall_downloader', 'retry_only_failures_with_link')
 
 
-        if not retry_only_failures_with_link and open_url is not None:
+        if not (retry_only_failures_with_link and (open_url is not None)):
             if not self.meets_datetime_requrements('unpaywall_downloader', self.most_recent_attempt):
                 print(
                     f"Attempted too recently; last attempt was {self.most_recent_attempt} cutoff is {self.config.get_string('unpaywall_downloader', 'retry_after_datetime')}")

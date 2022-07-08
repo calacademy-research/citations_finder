@@ -177,12 +177,8 @@ Currently only tested on mac. create a virtual environment using the requirement
 
 Journals.tsv IZ to add:
 
-Canadian Journal of Zoology
-Helgoland Marine Research
-Invertebrate Systematics
 Journal of Crustacean Biology
 Journal of Molluscan Studies
-Journal of Natural History
 Journal of the Marine Biological Association of the United Kingdom
 Marine Biodiversity
 Marine Biology
@@ -192,7 +188,4 @@ Proceedings of the Biological Society of Washington
 The Festivus
 The Nautilus
 The Veliger
-Zoologica Scripta
-Zoological Journal of the Linnean Society
 Zoosymposia
-Zoosystema
