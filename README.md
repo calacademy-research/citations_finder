@@ -91,7 +91,8 @@ Downloaders have their own custom SQL tables and can have independent retry logi
 
 ## Development status:
 
-As of 7/7/22: big rewrite prior to release; have only re-tested through step 3 (scan)
+As of 7/7/22: big rewrite prior to release; have only re-tested through step 5 (validate). Copyout and 
+scan_for_collection_ids require checking
 
 ## Firefox downloading:
 
