@@ -115,6 +115,8 @@ Currently only tested on mac. create a virtual environment using the requirement
 * PDF directory is flat; should with one directory per issn, at least, and possibly per year. Write
   converter for existing downloads and then update the Utils.get_filename_from_doi_string function.
 
+* fix and test crossref downloader
+
 * Generalize to work on windows - use os.path.join instead of slashes
 
 * scan for collection ids should be "Scan for specimen IDs"
@@ -175,17 +177,5 @@ Currently only tested on mac. create a virtual environment using the requirement
 
 * Support adding PDFs from journals that lack DOIs. e.g.: Herpetological Conservation & Biology
 
-Journals.tsv IZ to add:
 
-Journal of Crustacean Biology
-Journal of Molluscan Studies
-Journal of the Marine Biological Association of the United Kingdom
-Marine Biodiversity
-Marine Biology
-Molecular Phylogenetics and Evolution
-PeerJ
-Proceedings of the Biological Society of Washington
-The Festivus
-The Nautilus
-The Veliger
-Zoosymposia
+

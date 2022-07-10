@@ -16,7 +16,7 @@ headers = {
 }
 
 
-class DoiFactory():
+class DoiFactory:
 
     def __init__(self, sql):
         doi_sql_results = DBConnection.execute_query(sql)
@@ -29,7 +29,6 @@ class DoiFactory():
             downloaded = cur_doi_json[4]
             details = cur_doi_json[5]
             full_path = cur_doi_json[6]
-
 
             new_doi = DoiEntry(skip_setup=True)
             new_doi.details = json.loads(details)

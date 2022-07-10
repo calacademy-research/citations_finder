@@ -17,8 +17,8 @@ import signal
 import functools
 import shutil
 
-
 import pyautogui
+
 
 class Downloader(ABC, Utils):
     __metaclass__ = ABCMeta
@@ -49,7 +49,7 @@ class Downloader(ABC, Utils):
     def _download_url_to_pdf_bin(self, doi_entry, url, path):
         headers = {
             'User-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
-        r = requests.get(url, headers=headers, allow_redirects=True, timeout=120)
+        r = requests.get(url, headers=headers, allow_redirects=True, timeout=120, verify=False)
         if 'html' not in r.headers['Content-Type']:
             print(f"not html, downloading: {r.headers['Content-Type']} {url}")
 
@@ -57,10 +57,10 @@ class Downloader(ABC, Utils):
             with open(filename, "wb") as f:
                 print(f"Downloaded {doi_entry.doi} to {filename}.")
                 f.write(r.content)
-            return True
+            return (True, r.status_code)
         else:
-            # print(f"Not a PDF, can't download: {r.headers['Content-Type']} {url}")
-            raise TypeError(f"Not a PDF, can't download: {r.headers['Content-Type']} {url}")
+            print(f"Not a PDF, can't download. Code: {r.status_code}: {r.headers['Content-Type']} {url}")
+            return (False, r.status_code)
 
     @abstractmethod
     def download(self, doi_entry):
@@ -89,10 +89,10 @@ class Downloader(ABC, Utils):
         return decorator
 
     @timeout(3)
-    def _close_firefox(self,driver):
+    def _close_firefox(self, driver):
         driver.close()
 
-    def cleandir(self,path):
+    def cleandir(self, path):
         dir = path
         for files in os.listdir(dir):
             path = os.path.join(dir, files)
@@ -124,22 +124,22 @@ class Downloader(ABC, Utils):
         except TimeoutException:
             print("Timeout, never found a pdfviewer")
             pass
-
-        pyautogui.keyDown('command')
-        pyautogui.press('s')
-        pyautogui.keyUp('command')
-        time.sleep(0.5)
-        pyautogui.press('enter')
-        time.sleep(3)
-        pyautogui.keyDown('command')
-        pyautogui.press('q')
-        pyautogui.keyUp('command')
-        time.sleep(1)
-
         try:
+            pyautogui.keyDown('command')
+            pyautogui.press('s')
+            pyautogui.keyUp('command')
+            time.sleep(0.5)
+            pyautogui.press('enter')
+            time.sleep(3)
+            pyautogui.keyDown('command')
+            pyautogui.press('q')
+            pyautogui.keyUp('command')
+            time.sleep(1)
+
+
             self._close_firefox(driver)
-        except Exception:
-            print("timeout hit, continuing...")
+        except Exception as e:
+            print(f"exception in selenium/pyautogui: {e}, continuing...")
 
         # driver.close()
 

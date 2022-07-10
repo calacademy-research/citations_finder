@@ -6,6 +6,7 @@ from unpywall import Unpywall
 from requests import exceptions
 import requests
 import re
+import http
 
 
 class CrossrefDownloader(Downloader):
@@ -21,13 +22,13 @@ class CrossrefDownloader(Downloader):
         try:
             url = self._crossref_get_direct_link(doi)
             print(f"Attempting crossref link: {url}")
-            results = self._get_url_(url, decode_json=False, headers=headers)
+            results = self._get_url_(url, decode_json=False)
             ref_url = results.url
             print(f"Got crossref referred URL:{ref_url}")
             r = requests.get(ref_url, timeout=120)
-            try:
-                return self._download_url_to_pdf_bin(ref_url, doi, path)
-            except TypeError as e:
+
+            response, self.error_code = self._download_url_to_pdf_bin(ref_url, doi, path)
+            if not response and self.error_code == 200:
                 print("Didn't return pdf link, parsing...")
                 pattern = "(https?:\/\/[a-zA-Z0-9\-]+\.[a-zA-Z0-9]+[a-zA-Z\/\-0-9\.]+(?i)[.]pdf)"
                 regexp = re.compile(pattern)
@@ -45,7 +46,7 @@ class CrossrefDownloader(Downloader):
                 link = unique_match[0]
                 print(f"Candidate pdf link found: {link}. Attempting download....")
                 try:
-                    results = self._download_url_to_pdf_bin(link, doi, path)
+                    results, self.error_code = self._download_url_to_pdf_bin(link, doi, path)
                     if results is True:
                         print(f"Successful download from PDF extraction: {link}")
                     self.full_path = path
