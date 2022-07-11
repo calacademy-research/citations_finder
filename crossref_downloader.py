@@ -1,8 +1,5 @@
 from downloader import Downloader
 import traceback
-from unpaywall_downloader import UnpaywallDownloader
-from unpywall.utils import UnpywallCredentials
-from unpywall import Unpywall
 from requests import exceptions
 import requests
 import re

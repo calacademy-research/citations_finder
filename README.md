@@ -61,14 +61,14 @@ config.ini contains initial configuration. An example config.ini is in config.te
    Generates a score for each paper of interest. On instantiation, scan either loads the existing scan and
    score from the scans table in the database or if absent, it initialises these values and converts PDFs to
    txt.
-   It then scores by running  the set of regular expressions, (currently hardcoded; these
+   It then scores by running the set of regular expressions, (currently hardcoded; these
    belong in config.ini) to generate scores for the papers that have been downloaded.
 
 
 4. **scan_for_collection_ids**
 
-   An attempt to harvest the actual specimen ids. Doesn't work very well (formats in papers are 
-   nonstandard, and often in appendices that aren't necessarily attached to the public PDF). Results 
+   An attempt to harvest the actual specimen ids. Doesn't work very well (formats in papers are
+   nonstandard, and often in appendices that aren't necessarily attached to the public PDF). Results
    stored in matched_collection_ids in the database, linking specimen ID to DOI. Added to copyout report.
 
 5. **validate**
@@ -91,8 +91,8 @@ Downloaders have their own custom SQL tables and can have independent retry logi
 
 ## Development status:
 
-As of 7/7/22: big rewrite prior to release; have only re-tested through step 5 (validate). Copyout and 
-scan_for_collection_ids require checking
+As of 7/7/22: big rewrite prior to release; have only re-tested through step 5 inclusive (validate). Copyout
+and scan_for_collection_ids require checking.
 
 ## Firefox downloading:
 
@@ -105,6 +105,13 @@ must enable the application running citations_finder (e.g.: command, or pycharm)
 **WARNING WARNING WARNING**:
 This will ERASE the contents of firefox_save_directory. Recommended that you change the default firefox
 save directory to something specific while running in this mode.
+
+# Technical notes
+
+All times stored are in localtime, not GMT.
+
+The program performs poorly if the host system sleeps. Prevent that with programs like
+"amphetamine" for mac
 
 # Installation and running
 

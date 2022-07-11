@@ -154,6 +154,7 @@ class Scan:
                                     ("CASENT", 200),
                                     ("antweb", 400),
                                     ("antcat", 400),
+                                    ("inaturalist", 400),
                                     ("CAS", 20),
                                     ("center for comparative genomics", 100),
                                     ("CAS HERP", 100),

@@ -7,6 +7,7 @@ from colorama import Fore, Back, Style
 from ete3 import NCBITaxa
 import enchant
 from scan import Scan
+from datetime import datetime
 
 ncbi = NCBITaxa()
 
@@ -75,8 +76,8 @@ class Match(Utils):
             tf = "TRUE"
         else:
             tf = "FALSE"
-        sql = f""" insert into matches (doi,collection,ignore) values (?,?,?)"""
-        args = [self.doi, collection, ignore]
+        sql = f""" insert into matches (doi,collection,ignore,date_added) values (?,?,?,?)"""
+        args = [self.doi, collection, ignore, datetime.now()]
         DBConnection.execute_query(sql, args)
 
 
@@ -85,7 +86,6 @@ class Validator(Utils):
         self.matches = []
 
         self._create_tables(reset_matches_database=reset_matches_database)
-        # self.load_found("./2016_found")
 
     def get_matched_paper_dois(self):
         sql = f"""select doi from matches where ignore=FALSE"""
@@ -99,7 +99,8 @@ class Validator(Utils):
         sql_create_database_table = """ CREATE TABLE IF NOT EXISTS matches (
                                                 doi text primary key NOT NULL,
                                                 collection text,
-                                                ignore boolean
+                                                ignore boolean,
+                                                date_added DATE
                                             ); """
 
         DBConnection.execute_query(sql_create_database_table)
@@ -115,19 +116,6 @@ class Validator(Utils):
             f"cp full_path {target_dir}"
             command = "/bin/cp"
             subprocess.call([command, full_path, target_dir])
-
-    def load_found(self, directory):
-        from os import listdir
-        from os.path import isfile, join
-        all_files = [f for f in listdir(directory) if isfile(join(directory, f))]
-        for file in all_files:
-            doi = self.get_doi_from_path(file)
-            sql_insert = f"""insert into matches (doi,collection,ignore) VALUES (?,?,?) """
-
-            args = [doi,
-                    'herpetology',
-                    False]
-            DBConnection.execute_query(sql_insert, args)
 
     def audit(self, start_year, end_year):
         sql = f"""select dois.doi, dois.full_path, dois.published_date, scans.title, scans.score from scans,dois

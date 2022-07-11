@@ -11,7 +11,7 @@ class CopyOut(Utils):
         self.year = year
 
     def get_matches(self):
-        sql = f"""select matches.doi, matches.collection,dois.full_path,dois.published_date,dois.journal_title from matches, dois where matches.doi = dois.doi and 
+        sql = f"""select matches.doi, matches.collection,dois.full_path,dois.published_date,dois.journal_title, matches.date_added from matches, dois where matches.doi = dois.doi and 
         matches.ignore = 0 and  
         dois.{self.sql_year_restriction(self.year, self.year)} order by collection,dois.published_date"""
         results = DBConnection.execute_query(sql)
@@ -29,7 +29,7 @@ class CopyOut(Utils):
             os.makedirs(year_dir)
         return year_dir
 
-    def _copy_out_file(self,origin_path, collection,dest_dir):
+    def _copy_out_file(self, origin_path, collection, dest_dir):
         target_dir = self.make_target_dir(dest_dir, collection)
         target = target_dir + f"/{os.path.basename(origin_path)}"
         if not os.path.exists(target):
@@ -40,8 +40,7 @@ class CopyOut(Utils):
         for cur_match in self.get_matches():
             collection = cur_match[1]
             origin_path = cur_match[2]
-            self._copy_out_file(origin_path,collection,dest_dir)
-
+            self._copy_out_file(origin_path, collection, dest_dir)
 
     def write_match(self, cur_match, filehandle, db):
         doi = cur_match[0]
@@ -50,8 +49,9 @@ class CopyOut(Utils):
         origin_path = cur_match[2]
         published_date = cur_match[3]
         journal_title = cur_match[4]
+        date_added = cur_match[5]
         title = self.clean_string(doi_record.get_title())
-        filehandle.write(f"{doi}\t{collection}\t{journal_title}\t{title}\t{published_date}")
+        filehandle.write(f"{doi}\t{collection}\t{journal_title}\t{title}\t{published_date}\t{date_added}")
         sql = f"select identifier from matched_collection_ids where matched_collection_ids.doi='{doi}'"
         results = DBConnection.execute_query(sql)
 
@@ -86,15 +86,13 @@ class CopyOut(Utils):
         for cur_match in self.get_matches():
             sql = f"select line from found_scan_lines where doi = '{cur_match[0]}'"
             scan_db_results = DBConnection.execute_query(sql)
-            antweb=False
+            antweb = False
             for line_array in scan_db_results:
                 line = line_array[0]
                 if 'antweb' in line.lower():
-                    antweb=True
+                    antweb = True
                     break
             if antweb:
                 self.write_match(cur_match, fh, db)
                 origin_path = cur_match[2]
-                self._copy_out_file(origin_path,"antweb",path)
-
-
+                self._copy_out_file(origin_path, "antweb", path)
