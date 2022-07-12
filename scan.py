@@ -132,6 +132,10 @@ class Scan:
             ("c. piotrowski", 200),
             ("c piotrowski", 200),
             ("j. fong", 200),
+            ("shevock", 200),
+            ("j. shevock", 300),
+            ("j shevock", 300),
+
             ("j fong", 200),
             ("jon fong", 200),
             ("d. Catania", 200),  # studi di catania, italy received: june 30, 2016
@@ -299,8 +303,10 @@ class Scan:
                         break
         old_score = self.score
         assert self.score is not None
+
+
         if do_score:
-            self.score = self.score + score_per_line * found_count
+            self.score = self.score + (score_per_line * found_count)
         # if found_count > 0:
         #     print(f"Score change. From {old_score} to {self.score}\n")
         return results

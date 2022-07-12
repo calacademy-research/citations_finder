@@ -184,5 +184,9 @@ Currently only tested on mac. create a virtual environment using the requirement
 
 * Support adding PDFs from journals that lack DOIs. e.g.: Herpetological Conservation & Biology
 
+* Add iNaturalist, antcat, antweb to copyout (may be done for latter two)
+
+# "biology centre cas" is being scored at 20 instgead of -200 in scan.py
+
 
 

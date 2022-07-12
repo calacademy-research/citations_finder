@@ -23,6 +23,26 @@ class Match(Utils):
         self.title = title
         self.published_date = published_date
         self.full_path = full_path
+        self.notes = None
+
+    def generate_notes(self):
+        flag_notes = ['inaturalist', 'antweb', 'antcat']
+        sql = f"select line,score from found_scan_lines where doi = '{self.doi}'"
+        lines = DBConnection.execute_query(sql)
+        matches = {}
+        for line in lines:
+            matched_line = line[0]
+            for flag_note in flag_notes:
+                if flag_note in matched_line:
+                    matches[flag_note] = True
+        match_list = []
+        for flag_note in matches.keys():
+            match_list.append(flag_note)
+        notes = ",".join(match_list)
+        self.replace_note(notes)
+
+    def replace_note(self, notes):
+        self.notes = notes
 
     def print(self):
         print("--------------")
@@ -76,8 +96,8 @@ class Match(Utils):
             tf = "TRUE"
         else:
             tf = "FALSE"
-        sql = f""" insert into matches (doi,collection,ignore,date_added) values (?,?,?,?)"""
-        args = [self.doi, collection, ignore, datetime.now()]
+        sql = f""" insert into matches (doi,collection,ignore,date_added,notes) values (?,?,?,?,?)"""
+        args = [self.doi, collection, ignore, datetime.now(), self.notes]
         DBConnection.execute_query(sql, args)
 
 
@@ -100,7 +120,8 @@ class Validator(Utils):
                                                 doi text primary key NOT NULL,
                                                 collection text,
                                                 ignore boolean,
-                                                date_added DATE
+                                                date_added DATE,
+                                                notes text
                                             ); """
 
         DBConnection.execute_query(sql_create_database_table)
@@ -139,6 +160,7 @@ class Validator(Utils):
             self.matches.append(Match(doi, score, title, full_path, published_date))
 
         for match in self.matches:
+            match.generate_notes()
             self.prompt(match)
 
     def get_lineage(self, word, verbose=False):
