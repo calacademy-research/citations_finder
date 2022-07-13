@@ -31,15 +31,16 @@ class UnpaywallDownloader(Downloader, Utils):
                                             open_url TEXT, 
                                             most_recent_attempt DATE,
                                             most_recent_firefox_failure DATE,
-                                            error_code boolean
+                                            error_code boolean,
+                                            not_available boolean
 
                                         ); """
         DBConnection.execute_query(sql_create_database_table)
 
     def _update_unpaywall_database(self, doi):
 
-        sql = "INSERT OR REPLACE INTO unpaywall_downloader(doi, open_url, most_recent_attempt, most_recent_firefox_failure,error_code) VALUES(?,?,?,?,?)"
-        args = [doi, self.open_url, datetime.now(), self.most_recent_firefox_failure, self.error_code]
+        sql = "INSERT OR REPLACE INTO unpaywall_downloader(doi, open_url, most_recent_attempt, most_recent_firefox_failure,error_code,not_available) VALUES(?,?,?,?,?,?)"
+        args = [doi, self.open_url, datetime.now(), self.most_recent_firefox_failure, self.error_code,self.not_available]
         DBConnection.execute_query(sql, args)
 
     def download(self, doi_entry):
@@ -47,9 +48,10 @@ class UnpaywallDownloader(Downloader, Utils):
         self.open_url = None
         self.error_code = None
         self.most_recent_attempt = None
+        self.not_available = None
 
         # print(f"Download unpaywall:{doi_entry}")
-        sql = f"select most_recent_attempt, open_url, most_recent_firefox_failure,error_code from unpaywall_downloader where doi='{doi_entry.doi}'"
+        sql = f"select most_recent_attempt, open_url, most_recent_firefox_failure,error_code,not_available from unpaywall_downloader where doi='{doi_entry.doi}'"
         results = DBConnection.execute_query(sql)
         if len(results) == 0:
             self.most_recent_attempt = None
@@ -58,6 +60,7 @@ class UnpaywallDownloader(Downloader, Utils):
             self.open_url = results[0][1]
             self.most_recent_firefox_failure = results[0][2]
             self.error_code = results[0][3]
+            self.not_available = results[0][4]
 
         # if self.error_code != 200:
         #     print("Will not retry - last attempt was not found")
@@ -96,6 +99,8 @@ class UnpaywallDownloader(Downloader, Utils):
         print(f"Attempting unpaywall... @{datetime.now()}")
         use_firefox_downloader = self.config.get_boolean('unpaywall_downloader', 'firefox_downloader')
         retry_firefox_failure = self.config.get_boolean('unpaywall_downloader', 'retry_firefox_failure')
+        force_open_url_update = self.config.get_boolean('unpaywall_downloader', 'force_open_url_update')
+        force_update_link_only = self.config.get_boolean('unpaywall_downloader', 'force_update_link_only')
 
         try:
 
@@ -103,7 +108,7 @@ class UnpaywallDownloader(Downloader, Utils):
             # print(f"Downloading to: {self.PDF_DIRECTORY}/{filename}")
             email = self.config.get_string("downloaders", "header_email")
             UnpywallCredentials(email)
-            if self.open_url is None:
+            if self.open_url is None or force_open_url_update:
                 self.open_url = Unpywall.get_pdf_link(doi_entry.doi)
             else:
                 print(f"re-using url from last unpaywall pull: {self.open_url}..")
@@ -113,10 +118,16 @@ class UnpaywallDownloader(Downloader, Utils):
 
             if self.open_url is None:
                 print(f"Not available through unpaywall.")
+                self.not_available = True
                 return False
+            else:
+                self.not_available = False
             print(
                 f"Attempting unpaywall download: {self.open_url} will download to {self.PDF_DIRECTORY}/{filename}")
 
+            if force_update_link_only:
+                time.sleep(5)
+                return False
             response, self.error_code = self._download_url_to_pdf_bin(doi_entry, self.open_url, self.PDF_DIRECTORY)
             if response:
                 return True

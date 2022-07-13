@@ -77,6 +77,28 @@ class DatabaseReport:
     #     sql += self._sql_journal_suffix(journal)
     #     return DBConnection.execute_query(sql)[0][0]
 
+    # we use not available because it's possible
+    # that the open_url is null (not available) but we haven't
+    # queried it yet, so not_available would also be null
+    def _get_unpaywall_has_open_link(self, journal=None):
+        sql = f"""select count(*) from dois,unpaywall_downloader where dois.doi = unpaywall_downloader.doi 
+                 and not_available is false"""
+
+        sql += self._sql_date_suffix()
+        sql += self._sql_journal_suffix(journal)
+        sql = sql.replace("'s", "''s") #hack. this should be by issn
+
+        return int(DBConnection.execute_query(sql)[0][0])
+
+    def _get_unpaywall_has_err_code(self, journal=None):
+        sql = f"""select count(*) from dois,unpaywall_downloader where dois.doi = unpaywall_downloader.doi 
+                    and downloaded=FALSE and unpaywall_downloader.error_code is not null"""
+
+        sql += self._sql_date_suffix()
+        sql += self._sql_journal_suffix(journal)
+        sql = sql.replace("'s", "''s")
+        return int(DBConnection.execute_query(sql)[0][0])
+
     def report(self, journal=None, issn=None, summary=True):
 
         str = ""
@@ -110,32 +132,36 @@ class DatabaseReport:
             stats['total'] += 1
             if doi.downloaded:
                 stats['downloaded'] += 1
-            # if not doi.downloaded and doi.long_retry == 0 and doi.not_found_count == 0:
-            #     stats['pending'] += 1
-            if not doi.downloaded > 0:
+            else:
                 stats['missing'] += 1
-            #     downloaded=FALSE and not_found_count=0 and long_retry > 0
-            # if not doi.downloaded and doi.long_retry > 0 and doi.not_found_count == 0:
-            #     stats['unresolved'] += 1
         from tabulate import tabulate
         table = []
 
         for journal, stats in journal_stats.items():
             row = []
+            open_link_num = self._get_unpaywall_has_open_link(journal)
+
             for statname, stat in stats.items():
                 row.append(stat)
+            percent = open_link_num / stats['total'] * 100
+            row.append(f"{percent:.0f}%")
             if stats['downloaded'] > 0:
                 percent = stats['downloaded'] / stats['total'] * 100
                 # row.append(f"{percent:.0f}%")
                 row.append(percent)
             else:
                 row.append(0)
-            table.append(row)
-        sorted_table = sorted(table, key=lambda x: x[4])
-        for i, row in enumerate(sorted_table):
-            percent_string = f"{row[4]:.0f}%"
-            sorted_table[i][4] = percent_string
 
-        str += tabulate(sorted_table, headers=['Journal'] + DatabaseReport.categories + ['%'])
+            row.append(open_link_num)
+            row.append(self._get_unpaywall_has_err_code(journal))
+
+
+            table.append(row)
+        sorted_table = sorted(table, key=lambda x: x[5])
+        for i, row in enumerate(sorted_table):
+            percent_string = f"{row[5]:.0f}%"
+            sorted_table[i][5] = percent_string
+
+        str += tabulate(sorted_table, headers=['Journal'] + DatabaseReport.categories + ['%open'] +["%downloaded"] + ["UP link"]  +["UP err"])
 
         return str
