@@ -81,18 +81,22 @@ class DatabaseReport:
     # that the open_url is null (not available) but we haven't
     # queried it yet, so not_available would also be null
     def _get_unpaywall_has_open_link(self, journal=None):
-        sql = f"""select count(*) from dois,unpaywall_downloader where dois.doi = unpaywall_downloader.doi 
-                 and not_available is false"""
+        sql = f"""select count(*)
+        from unpaywall_downloader,
+             dois
+          where unpaywall_downloader.doi = dois.doi
+          and (unpaywall_downloader.not_available = False or unpaywall_downloader.open_url is not null)
+          """
 
         sql += self._sql_date_suffix()
         sql += self._sql_journal_suffix(journal)
-        sql = sql.replace("'s", "''s") #hack. this should be by issn
+        sql = sql.replace("'s", "''s")  # hack. this should be by issn
 
         return int(DBConnection.execute_query(sql)[0][0])
 
     def _get_unpaywall_has_err_code(self, journal=None):
         sql = f"""select count(*) from dois,unpaywall_downloader where dois.doi = unpaywall_downloader.doi 
-                    and downloaded=FALSE and unpaywall_downloader.error_code is not null"""
+                    and downloaded=FALSE and unpaywall_downloader.error_code """
 
         sql += self._sql_date_suffix()
         sql += self._sql_journal_suffix(journal)
@@ -141,20 +145,23 @@ class DatabaseReport:
             row = []
             open_link_num = self._get_unpaywall_has_open_link(journal)
 
+            # Downloaded, missing, total
             for statname, stat in stats.items():
                 row.append(stat)
             percent = open_link_num / stats['total'] * 100
+            # %open
             row.append(f"{percent:.0f}%")
+            # %got (downloaded)
             if stats['downloaded'] > 0:
                 percent = stats['downloaded'] / stats['total'] * 100
                 # row.append(f"{percent:.0f}%")
                 row.append(percent)
             else:
                 row.append(0)
-
+            # raw number with open links (UP link)
             row.append(open_link_num)
+            # Number of not downloaded with error codes
             row.append(self._get_unpaywall_has_err_code(journal))
-
 
             table.append(row)
         sorted_table = sorted(table, key=lambda x: x[5])
@@ -162,6 +169,7 @@ class DatabaseReport:
             percent_string = f"{row[5]:.0f}%"
             sorted_table[i][5] = percent_string
 
-        str += tabulate(sorted_table, headers=['Journal'] + DatabaseReport.categories + ['%open'] +["%downloaded"] + ["UP link"]  +["UP err"])
-
+        str += tabulate(sorted_table,
+                        headers=['Journal'] + DatabaseReport.categories + ['%open'] + ["%got"] + ["UP link"] + [
+                            "UP err"])
         return str

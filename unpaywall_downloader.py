@@ -49,6 +49,8 @@ class UnpaywallDownloader(Downloader, Utils):
         self.error_code = None
         self.most_recent_attempt = None
         self.not_available = None
+        force_update_link_only = self.config.get_boolean('unpaywall_downloader', 'force_update_link_only')
+        populate_not_available_only = self.config.get_boolean('unpaywall_downloader', 'populate_not_available_only')
 
         # print(f"Download unpaywall:{doi_entry}")
         sql = f"select most_recent_attempt, open_url, most_recent_firefox_failure,error_code,not_available from unpaywall_downloader where doi='{doi_entry.doi}'"
@@ -62,6 +64,9 @@ class UnpaywallDownloader(Downloader, Utils):
             self.error_code = results[0][3]
             self.not_available = results[0][4]
 
+        if force_update_link_only and populate_not_available_only:
+            if self.not_available is not None:
+                return False
         # if self.error_code != 200:
         #     print("Will not retry - last attempt was not found")
         retry_only_failures_with_link = self.config.get_boolean('unpaywall_downloader', 'retry_only_failures_with_link')
@@ -101,6 +106,7 @@ class UnpaywallDownloader(Downloader, Utils):
         retry_firefox_failure = self.config.get_boolean('unpaywall_downloader', 'retry_firefox_failure')
         force_open_url_update = self.config.get_boolean('unpaywall_downloader', 'force_open_url_update')
         force_update_link_only = self.config.get_boolean('unpaywall_downloader', 'force_update_link_only')
+        # do_not_refetch_links = self.config.get_boolean('unpaywall_downloader', 'do_not_refetch_links')
 
         try:
 
@@ -108,6 +114,13 @@ class UnpaywallDownloader(Downloader, Utils):
             # print(f"Downloading to: {self.PDF_DIRECTORY}/{filename}")
             email = self.config.get_string("downloaders", "header_email")
             UnpywallCredentials(email)
+            # # Joe hack here
+            # if self.not_available == 1:
+            #     print("hack - joe - do not bother unpaywall again")
+            #
+            #     return False
+            #
+            # # End joe hack
             if self.open_url is None or force_open_url_update:
                 self.open_url = Unpywall.get_pdf_link(doi_entry.doi)
             else:
@@ -126,7 +139,6 @@ class UnpaywallDownloader(Downloader, Utils):
                 f"Attempting unpaywall download: {self.open_url} will download to {self.PDF_DIRECTORY}/{filename}")
 
             if force_update_link_only:
-                time.sleep(5)
                 return False
             response, self.error_code = self._download_url_to_pdf_bin(doi_entry, self.open_url, self.PDF_DIRECTORY)
             if response:

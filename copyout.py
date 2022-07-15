@@ -67,9 +67,7 @@ class CopyOut(Utils):
     def dump_file_tsv(self, path="./"):
         if not os.path.exists(path):
             os.makedirs(path)
-        db = DoiDatabase(start_year=self.year,
-                         end_year=self.year,
-                         setup=False)
+        db = DoiDatabase(start_year=self.year)
         filename = f"{path}/matched_{self.year}.tsv"
         fh = open(filename, "w")
         for cur_match in self.get_matches():

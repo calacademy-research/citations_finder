@@ -3,6 +3,7 @@ from scan import Scan
 from utils_mixin import Utils
 from doi_database import DoiFactory
 
+
 class ScanDatabase(Utils):
 
     # "reset" causes a the whole scan database to be rebuilt.
@@ -13,15 +14,18 @@ class ScanDatabase(Utils):
         super().__init__()
         if reset_scan_database:
             self._create_scans_database_table(reset_scan_database)
+            self.scans = None
+        else:
+            self.load_scans()
         self.doi_db = doi_db
 
     def __str__(self):
         if self.cannot_convert is not False:
-            return(f"doi: {self.doi} Score: {self.score} title: {self.title}")
+            return (f"doi: {self.doi} Score: {self.score} title: {self.title}")
         else:
-            return(f"doi: {self.doi} Score: CONVERSION FAILURE title: {self.title}")
+            return (f"doi: {self.doi} Score: CONVERSION FAILURE title: {self.title}")
 
-    def _create_scans_database_table(self,reset_tables=False):
+    def _create_scans_database_table(self, reset_tables=False):
         if reset_tables:
             try:
                 sql = "drop table scans"
@@ -51,7 +55,7 @@ class ScanDatabase(Utils):
                                         ); """
         DBConnection.execute_query(sql_create_database_table)
 
-    def scan_single_doi(self,doi):
+    def scan_single_doi(self, doi):
         scan = Scan(doi_string=doi)
         scan.scan(clear_existing_records=True)
         return scan
@@ -62,13 +66,13 @@ class ScanDatabase(Utils):
             if scan.broken_converter is not True:
                 scan.scan()
 
-    def scan_pdfs(self, start_year, end_year, rescore = False, directory="./"):
+    def scan_pdfs(self, start_year, end_year, rescore=False, directory="./"):
         if not rescore:
             sql = f"""SELECT * FROM dois LEFT JOIN scans ON dois.doi = scans.doi WHERE downloaded = 1 and scans.doi IS NULL
-            and {self.sql_year_restriction(start_year,end_year)}"""
+            and {self.sql_year_restriction(start_year, end_year)}"""
             dois = DoiFactory(sql).dois
         else:
-            dois = self.doi_db.get_dois(start_year=start_year, end_year=end_year,journal_issn=None)
+            dois = self.doi_db.get_dois(start_year=start_year, end_year=end_year, journal_issn=None)
         # multiprocessing verison:
         # import multiprocessing as mp
         # pool = mp.Pool(mp.cpu_count())
@@ -78,7 +82,8 @@ class ScanDatabase(Utils):
         for doi_entry in dois:
             self.do_scan(doi_entry)
 
-    def scan_for_collection_ids(self,reset_tables=False):
+
+    def scan_for_collection_ids(self, reset_tables=False):
         if reset_tables:
             sql = "drop table matched_collection_ids"
             DBConnection.execute_query(sql)
@@ -91,7 +96,7 @@ class ScanDatabase(Utils):
         select_dois = f"""select doi from matches where ignore = 0"""
         matched_dois = DBConnection.execute_query(select_dois)
         for doi in matched_dois:
-            doi=doi[0]
+            doi = doi[0]
             scan = Scan(doi_string=doi)
             results = scan.scan_collection_ids()
             if results:
@@ -108,46 +113,6 @@ class ScanDatabase(Utils):
                     #     print(f"doi: {doi} title: {scan.title}")
                     #     print(f" Got bad: {result}")
 
-    def __str__(self):
-        good_scan = 0
-        bad_scan = 0
-        for cur_scan in self.scans.values():
-            if cur_scan.found_count > 0:
-                good_scan += 1
-            else:
-                bad_scan += 1
 
-        retval = f"Total scanned: {good_scan + bad_scan}\n"
-        retval += f" Good: {good_scan}\n"
-        retval += f" Bad: {bad_scan}"
-        return retval
 
-    def year_breakdown(self):
-        year_hist = {}
 
-        for cur_scan in self.scans.values():
-            if cur_scan.found_count > 4:
-                date = cur_scan.doi_object.get_date()
-                if date.year not in year_hist:
-                    year_hist[date.year] = 1
-                else:
-                    year_hist[date.year] += 1
-
-        for year, counts in year_hist.items():
-            print(f"{year}: {counts}")
-
-    def top_papers_by_score(self, year):
-        top_papers = []
-
-        for cur_scan in self.scans.values():
-            date = cur_scan.doi_object.get_date()
-            if date.year != year:
-                continue
-
-            if cur_scan.score > 0:
-                top_papers.append(cur_scan)
-
-        top_papers = sorted(top_papers)
-
-        for sort in top_papers:
-            print(f"{sort}")

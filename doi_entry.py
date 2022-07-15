@@ -191,6 +191,8 @@ class DoiEntry(Utils):
             self.full_path = filename
             self.downloaded = True
             return True
+        else:
+            self.downloaded = False
         return False
 
     def get_doi_date_string(self, item):

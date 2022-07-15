@@ -12,7 +12,6 @@ from copyout import CopyOut
 from crossref_journal_entry import CrossrefJournalEntry
 
 
-
 def download_single_doi(doi, config):
     print("Single DOI download mode")
     select_doi = f"""select * from dois where doi='{doi}'"""
@@ -47,7 +46,8 @@ def retry_failed_unpaywall_links(config):
 def setup_tables():
     CrossrefJournalEntry.create_tables()
 
-
+# TODO: smoe missing pdfs are marked as downloaded, we need a cross check step to mark
+# missing as missing.
 def setup():
     config = Config()
     setup_tables()
@@ -71,6 +71,9 @@ def setup():
         if config.get_boolean('general', 'exit_after_report'):
             sys.exit(0)
 
+    # joe tie to config
+    db.ensure_downloaded_has_pdf(2020,2022)
+
     verify_start_year = config.get_int('verify', 'verify_start_year')
     verify_end_year = config.get_int('verify', 'verify_end_year')
 
@@ -81,17 +84,6 @@ def setup():
     if config.get_boolean('verify', 'verify_all_journals'):
         db.verify_dois_by_journal_size(verify_start_year, verify_end_year)
 
-    if config.get_boolean('scan_reporting', 'enabled'):
-        scan_db = ScanDatabase(db, reset_scan_database=False)
-
-        print(f"{scan_db}")
-        scan_db.year_breakdown()
-        scan_report_start_year = config.get_int('scan_reporting', 'scan_report_start_year')
-        scan_report_end_year = config.get_int('scan_reporting', 'scan_report_end_year')
-
-        for cur_year in range(scan_report_start_year, scan_report_end_year):
-            print(f"{scan_db.top_papers_by_score(cur_year)}")
-
     if config.get_boolean('scan', 'enabled'):
         scan_start_year = config.get_int('scan', 'scan_start_year')
         scan_end_year = config.get_int('scan', 'scan_end_year')
@@ -100,10 +92,10 @@ def setup():
         scan_db = ScanDatabase(db, reset_scan_database=reset_scan_database)
         scan_db.scan_pdfs(scan_start_year, scan_end_year, rescore=rescore)
 
-    if config.get_boolean('scan_for_colleciton_ids', 'enabled'):
-        reset_scan_database = config.get_boolean('scan', 'reset_scan_database')
+        if config.get_boolean('scan_for_colleciton_ids', 'enabled'):
+            reset_scan_database = config.get_boolean('scan', 'reset_scan_database')
 
-        scan_db.scan_for_collection_ids(reset_tables=reset_scan_database)
+            scan_db.scan_for_collection_ids(reset_tables=reset_scan_database)
 
     validate_enabled = config.get_boolean('validate', 'enabled')
 
@@ -137,7 +129,8 @@ def setup():
     sys.exit(1)
 
 
-#  joe - remove? test.
+#  testing code - we generate a set of known good papers and test our algorithms against it.
+# Hasn't been validated since the re-org, not currently run.
 def test_known_good(db):
     scan_db = ScanDatabase(db, reset_scan_database=False)
     scan_associations = KnownGoodPapers()

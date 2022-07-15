@@ -205,6 +205,15 @@ class DoiDatabase(Utils):
             raise FileNotFoundError(f"No such doi: {doi} or multiple results")
         return doi[0]
 
+    def ensure_downloaded_has_pdf(self,start_year,end_year):
+        dois = self.get_dois(start_year,end_year)
+        for doi_entry in dois:
+            doi_entry.check_file()
+            doi_entry.update_database()
+
+
+
+
     # Ensures that all DOIs in the database have associated files
     # Download, if not.
 

@@ -1,5 +1,7 @@
+#  testing code - we generate a set of known good papers and test our algorithms against it.
+# Hasn't been validated since the re-org, not currently run.
+
 from doi_database import DoiDatabase
-# from fuzzywuzzy import fuzz
 from db_connection import DBConnection
 from doi_database import DoiFactory
 import re

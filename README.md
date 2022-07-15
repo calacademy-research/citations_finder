@@ -57,7 +57,9 @@ config.ini contains initial configuration. An example config.ini is in config.te
 
 
 3. **scan**
-
+   
+   Scans are the results of the automated scoring process. They are not vetted by humans - after scans run 
+   through the scoring process (this step) 
    Generates a score for each paper of interest. On instantiation, scan either loads the existing scan and
    score from the scans table in the database or if absent, it initialises these values and converts PDFs to
    txt.
