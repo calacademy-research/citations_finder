@@ -106,7 +106,7 @@ class UnpaywallDownloader(Downloader, Utils):
         retry_firefox_failure = self.config.get_boolean('unpaywall_downloader', 'retry_firefox_failure')
         force_open_url_update = self.config.get_boolean('unpaywall_downloader', 'force_open_url_update')
         force_update_link_only = self.config.get_boolean('unpaywall_downloader', 'force_update_link_only')
-        # do_not_refetch_links = self.config.get_boolean('unpaywall_downloader', 'do_not_refetch_links')
+        do_not_refetch_links = self.config.get_boolean('unpaywall_downloader', 'do_not_refetch_links')
 
         try:
 
@@ -114,13 +114,12 @@ class UnpaywallDownloader(Downloader, Utils):
             # print(f"Downloading to: {self.PDF_DIRECTORY}/{filename}")
             email = self.config.get_string("downloaders", "header_email")
             UnpywallCredentials(email)
-            # # Joe hack here
-            # if self.not_available == 1:
-            #     print("hack - joe - do not bother unpaywall again")
-            #
-            #     return False
-            #
-            # # End joe hack
+
+            if self.not_available == 1 and do_not_refetch_links:
+                print("Do not re-pull missing unpaywall links")
+
+                return False
+
             if self.open_url is None or force_open_url_update:
                 self.open_url = Unpywall.get_pdf_link(doi_entry.doi)
             else:

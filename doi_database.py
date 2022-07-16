@@ -39,7 +39,8 @@ class DoiDatabase(Utils):
         super().__init__()
 
         self._setup()
-        self._query_journals(start_year)
+        if start_year is not None:
+            self._query_journals(start_year)
 
     @staticmethod
     def _create_tables():

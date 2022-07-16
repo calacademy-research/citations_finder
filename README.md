@@ -93,8 +93,8 @@ Downloaders have their own custom SQL tables and can have independent retry logi
 
 ## Development status:
 
-As of 7/7/22: big rewrite prior to release; have only re-tested through step 5 inclusive (validate). Copyout
-and scan_for_collection_ids require checking.
+Fully tested; the current major problem is hardcoding of CAS specific search terms. These can
+(and should) be moved to config.ini.
 
 ## Firefox downloading:
 

@@ -153,8 +153,13 @@ class Scan:
 
     @classmethod
     def _get_scored_strings(cls):
-        string_set_pre_reference = [("CASC", 40),
+        string_set_pre_reference = [("CASC", 60),
                                     ("CASIZ", 200),
+                                    ("CAS-SUA", 200),
+                                    ("CAS-SUR", 200),
+                                    ("CAS-SU", 200),
+                                    ("CASTYPE", 200),
+
                                     ("CASENT", 200),
                                     ("antweb", 400),
                                     ("antcat", 400),

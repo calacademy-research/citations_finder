@@ -46,6 +46,7 @@ def retry_failed_unpaywall_links(config):
 def setup_tables():
     CrossrefJournalEntry.create_tables()
 
+
 # TODO: smoe missing pdfs are marked as downloaded, we need a cross check step to mark
 # missing as missing.
 def setup():
@@ -72,7 +73,7 @@ def setup():
             sys.exit(0)
 
     # joe tie to config
-    db.ensure_downloaded_has_pdf(2020,2022)
+    db.ensure_downloaded_has_pdf(2020, 2022)
 
     verify_start_year = config.get_int('verify', 'verify_start_year')
     verify_end_year = config.get_int('verify', 'verify_end_year')
@@ -107,16 +108,20 @@ def setup():
 
     copyout_enabled = config.get_boolean('copyout', 'enabled')
     if copyout_enabled:
-        target_dir = config.get_string('copyout', 'target_dir')
         copyout_start_year = config.get_int('copyout', 'copyout_start_year')
         copyout_end_year = config.get_int('copyout', 'copyout_end_year')
-        for cur_year in range(copyout_start_year, copyout_end_year):
+        target_dir = config.get_string('copyout', 'target_dir')
+
+        for cur_year in range(copyout_start_year, copyout_end_year+1):
+            print(f"Exporting year {cur_year}")
             copyout = CopyOut(cur_year)
             if config.get_boolean('copyout', 'copyout_pdfs'):
                 copyout.copy_out_files(target_dir)
             if config.get_boolean('copyout', 'export_tsv'):
                 copyout.dump_file_tsv(target_dir)
-                copyout.dump_antweb(target_dir)
+                copyout.dump_custom("antcat", target_dir)
+                copyout.dump_custom("antweb", target_dir)
+                copyout.dump_custom("inaturalist", target_dir)
 
     # validator.copy_matches("2016_found")
 

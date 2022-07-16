@@ -11,7 +11,7 @@ class CopyOut(Utils):
         self.year = year
 
     def get_matches(self):
-        sql = f"""select matches.doi, matches.collection,dois.full_path,dois.published_date,dois.journal_title, matches.date_added from matches, dois where matches.doi = dois.doi and 
+        sql = f"""select matches.doi, matches.collection,dois.full_path,dois.published_date,dois.journal_title, matches.date_added, matches.notes from matches, dois where matches.doi = dois.doi and 
         matches.ignore = 0 and  
         dois.{self.sql_year_restriction(self.year, self.year)} order by collection,dois.published_date"""
         results = DBConnection.execute_query(sql)
@@ -50,8 +50,9 @@ class CopyOut(Utils):
         published_date = cur_match[3]
         journal_title = cur_match[4]
         date_added = cur_match[5]
+        notes = cur_match[6]
         title = self.clean_string(doi_record.get_title())
-        filehandle.write(f"{doi}\t{collection}\t{journal_title}\t{title}\t{published_date}\t{date_added}")
+        filehandle.write(f"{doi}\t{collection}\t{journal_title}\t{title}\t{published_date}\t{date_added}\t{notes}")
         sql = f"select identifier from matched_collection_ids where matched_collection_ids.doi='{doi}'"
         results = DBConnection.execute_query(sql)
 
@@ -70,27 +71,27 @@ class CopyOut(Utils):
         db = DoiDatabase(start_year=self.year)
         filename = f"{path}/matched_{self.year}.tsv"
         fh = open(filename, "w")
+        fh.write("doi\tcollection\tjournal_title\ttitle\tpublished_date\tdate_added\tnotes\n")
         for cur_match in self.get_matches():
             self.write_match(cur_match, fh, db)
 
-    def dump_antweb(self, path="./"):
+    def dump_custom(self,special_note_string,path):
         if not os.path.exists(path):
             os.makedirs(path)
-        db = DoiDatabase(start_year=self.year,
-                         end_year=self.year,
-                         setup=False)
-        filename = f"{path}/matched_{self.year}_antweb.tsv"
+
+        db = DoiDatabase()
+        filename = f"{path}/matched_{self.year}_{special_note_string}.tsv"
         fh = open(filename, "w")
         for cur_match in self.get_matches():
             sql = f"select line from found_scan_lines where doi = '{cur_match[0]}'"
             scan_db_results = DBConnection.execute_query(sql)
-            antweb = False
+            found_special_note = False
             for line_array in scan_db_results:
                 line = line_array[0]
-                if 'antweb' in line.lower():
-                    antweb = True
+                if special_note_string in line.lower():
+                    found_special_note = True
                     break
-            if antweb:
+            if found_special_note:
                 self.write_match(cur_match, fh, db)
                 origin_path = cur_match[2]
-                self._copy_out_file(origin_path, "antweb", path)
+                self._copy_out_file(origin_path, special_note_string, path)
