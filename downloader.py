@@ -16,7 +16,7 @@ import os
 import signal
 import functools
 import shutil
-
+from selenium.common.exceptions import WebDriverException
 import pyautogui
 
 
@@ -114,15 +114,19 @@ class Downloader(ABC, Utils):
         # driver = webdriver.Firefox(options=options)
         driver = webdriver.Firefox()
 
-        driver.get(url)
 
-        time.sleep(3)
         try:
+            driver.get(url)
+
+            time.sleep(3)
             WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "pdfViewer"))
             )
         except TimeoutException:
             print("Timeout, never found a pdfviewer")
+            pass
+        except WebDriverException:
+            print("webdriver failed, continuing")
             pass
         try:
             pyautogui.keyDown('command')

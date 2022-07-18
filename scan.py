@@ -143,7 +143,7 @@ class Scan:
             ("w. pulawski", 100),
             ("w pulawski", 100),
             ("wojciech pulawski", 100),
-            ("L. Scheinbeg", 200),
+            ("L. scheinberg", 200),
             ("D.H.Kavanaugh", 200),
             ("D.H. Kavanaugh", 200),
             ("C.E Griswold", 200),
@@ -159,7 +159,6 @@ class Scan:
                                     ("CAS-SUR", 200),
                                     ("CAS-SU", 200),
                                     ("CASTYPE", 200),
-
                                     ("CASENT", 200),
                                     ("antweb", 400),
                                     ("antcat", 400),
@@ -293,6 +292,7 @@ class Scan:
 
                     result = re.search(regex, cur_line)
                     if result is not None:
+
                         # print(".", end='')
                         # print(f"{self.textfile_path} possible: {cur_line}")
                         results.append(result.group(0))

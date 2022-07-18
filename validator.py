@@ -276,7 +276,7 @@ class Validator(Utils):
     def prompt_add_type(self, match):
         collection_type = None
         while collection_type is None:
-            option = input("Herpetology(H) Ichthyology(I) O&M(O) IZ&G(Z) Anthropology(A) Entomology(E) Botany(B)")
+            option = input("Herpetology(H) Ichthyology(I) O&M(O) IZ&G(Z) Anthropology(A) Entomology(E) Botany(B) Other(O)")
             option = option.lower()
             if option == "h":
                 collection_type = "herpetology"
@@ -292,4 +292,6 @@ class Validator(Utils):
                 collection_type = "entomology"
             elif option == "b":
                 collection_type = "botany"
+            elif option == "o":
+                collection_type = "other"
         match.update(ignore=False, collection=collection_type)
