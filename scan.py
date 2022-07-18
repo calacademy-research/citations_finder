@@ -135,7 +135,9 @@ class Scan:
             ("shevock", 200),
             ("j. shevock", 300),
             ("j shevock", 300),
-
+            ("seth cotterell", 300),
+            ("s cotterell", 300),
+            ("s. cotterell", 300),
             ("j fong", 200),
             ("jon fong", 200),
             ("d. Catania", 200),  # studi di catania, italy received: june 30, 2016
@@ -153,16 +155,23 @@ class Scan:
 
     @classmethod
     def _get_scored_strings(cls):
+        # Test that hypehens and colons are parsed correctly in the
+        # reguar expression sets
         string_set_pre_reference = [("CASC", 60),
                                     ("CASIZ", 200),
+                                    ("izcas", -200),  # Chinese academy of sciences
                                     ("CAS-SUA", 200),
                                     ("CAS-SUR", 200),
                                     ("CAS-SU", 200),
+                                    ("CAS:SU", 200),
+                                    ("CAS:ICH", 200),
+                                    ("CAS-ICH", 200),
                                     ("CASTYPE", 200),
                                     ("CASENT", 200),
                                     ("antweb", 400),
                                     ("antcat", 400),
                                     ("inaturalist", 400),
+                                    ("catalog of fishes", 400),
                                     ("CAS", 20),
                                     ("center for comparative genomics", 100),
                                     ("CAS HERP", 100),
@@ -292,7 +301,6 @@ class Scan:
 
                     result = re.search(regex, cur_line)
                     if result is not None:
-
                         # print(".", end='')
                         # print(f"{self.textfile_path} possible: {cur_line}")
                         results.append(result.group(0))
@@ -308,7 +316,6 @@ class Scan:
                         break
         old_score = self.score
         assert self.score is not None
-
 
         if do_score:
             self.score = self.score + (score_per_line * found_count)

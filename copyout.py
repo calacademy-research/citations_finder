@@ -11,9 +11,18 @@ class CopyOut(Utils):
         self.year = year
 
     def get_matches(self):
-        sql = f"""select matches.doi, matches.collection,dois.full_path,dois.published_date,dois.journal_title, matches.date_added, matches.notes from matches, dois where matches.doi = dois.doi and 
-        matches.ignore = 0 and  
-        dois.{self.sql_year_restriction(self.year, self.year)} order by collection,dois.published_date"""
+        sql = f"""select matches.doi, 
+                    matches.collection,
+                    dois.full_path,
+                    dois.published_date,
+                    dois.journal_title, 
+                    matches.date_added, 
+                    matches.notes, 
+                    matches.digital_only 
+                    from matches, dois where matches.doi = dois.doi and 
+                    matches.ignore = 0   
+                    and matches.digital_only is not NULL and
+                    dois.{self.sql_year_restriction(self.year, self.year)} order by collection,dois.published_date"""
         results = DBConnection.execute_query(sql)
         return results
 
@@ -40,6 +49,10 @@ class CopyOut(Utils):
         for cur_match in self.get_matches():
             collection = cur_match[1]
             origin_path = cur_match[2]
+            notes = cur_match[6]
+            digital_only = bool(cur_match[7])
+            if digital_only is True:
+                continue
             self._copy_out_file(origin_path, collection, dest_dir)
 
     def write_match(self, cur_match, filehandle, db):
@@ -51,8 +64,10 @@ class CopyOut(Utils):
         journal_title = cur_match[4]
         date_added = cur_match[5]
         notes = cur_match[6]
+        digital_only = cur_match[7]
         title = self.clean_string(doi_record.get_title())
-        filehandle.write(f"{doi}\t{collection}\t{journal_title}\t{title}\t{published_date}\t{date_added}\t{notes}")
+        filehandle.write(
+            f"{doi}\t{collection}\t{journal_title}\t{title}\t{published_date}\t{date_added}\t{notes}\t{digital_only}")
         sql = f"select identifier from matched_collection_ids where matched_collection_ids.doi='{doi}'"
         results = DBConnection.execute_query(sql)
 
@@ -71,11 +86,11 @@ class CopyOut(Utils):
         db = DoiDatabase(start_year=self.year)
         filename = f"{path}/matched_{self.year}.tsv"
         fh = open(filename, "w")
-        fh.write("doi\tcollection\tjournal_title\ttitle\tpublished_date\tdate_added\tnotes\n")
+        fh.write("doi\tcollection\tjournal_title\ttitle\tpublished_date\tdate_added\tnotes\tdigital_only\n")
         for cur_match in self.get_matches():
             self.write_match(cur_match, fh, db)
 
-    def dump_custom(self,special_note_string,path):
+    def dump_custom(self, special_note_string, path):
         if not os.path.exists(path):
             os.makedirs(path)
 

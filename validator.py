@@ -17,16 +17,17 @@ ncbi = NCBITaxa()
 
 # f"{Fore.MAGENTA + self.chromosome.id + Fore.WHITE}:" \
 class Match(Utils):
-    def __init__(self, doi, score, title, full_path, published_date):
+    def __init__(self, doi, score, title, full_path, published_date, notes=None, digital_only=None):
         self.doi = doi
         self.score = score
         self.title = title
         self.published_date = published_date
         self.full_path = full_path
-        self.notes = None
+        self.notes = notes
+        self.digital_only = digital_only
 
     def generate_notes(self):
-        flag_notes = ['inaturalist', 'antweb', 'antcat']
+        flag_notes = ['inaturalist', 'antweb', 'antcat', 'catalog of fishes']
         sql = f"select line,score from found_scan_lines where doi = '{self.doi}'"
         lines = DBConnection.execute_query(sql)
         matches = {}
@@ -48,6 +49,10 @@ class Match(Utils):
         print("--------------")
         print(f"Score: {self.score} title: {self.title}")
         print(f"doi: {self.doi} date:{self.published_date} path: {self.full_path}")
+        if self.notes is not None and len(self.notes) > 0:
+            print(f"Notes: {self.notes}")
+        if self.digital_only is not None and len(self.digital_only) > 0:
+            print(f"digital_only: {self.digital_only}")
 
     def print_matched_lines(self):
         sql = f"select line,score from found_scan_lines where doi = '{self.doi}'"
@@ -87,17 +92,15 @@ class Match(Utils):
         pdf_file = f"{pwd}/{self.full_path}"
         subprocess.call([command, pdf_file])
 
-    def update(self, ignore, collection=None):
+    # Ignore is for papers that aren't correct matches
+    def update(self, ignore, collection=None,digital_only=None):
         #  for updating match records
         # sql = f"""delete from matches where doi='{self.doi}'"""
         # DBConnection.execute_query(sql)
-
-        if ignore:
-            tf = "TRUE"
-        else:
-            tf = "FALSE"
-        sql = f""" insert into matches (doi,collection,ignore,date_added,notes) values (?,?,?,?,?)"""
-        args = [self.doi, collection, ignore, datetime.now(), self.notes]
+        if digital_only is not None:
+            self.digital_only = digital_only
+        sql = f""" replace into matches (doi,collection,ignore,date_added,notes,digital_only) values (?,?,?,?,?,?)"""
+        args = [self.doi, collection, ignore, datetime.now(), self.notes, self.digital_only]
         DBConnection.execute_query(sql, args)
 
 
@@ -121,7 +124,8 @@ class Validator(Utils):
                                                 collection text,
                                                 ignore boolean,
                                                 date_added DATE,
-                                                notes text
+                                                notes text,
+                                                digital_only boolean
                                             ); """
 
         DBConnection.execute_query(sql_create_database_table)
@@ -162,6 +166,35 @@ class Validator(Utils):
         for match in self.matches:
             match.generate_notes()
             self.prompt(match)
+
+    def audit_digital_only(self, start_year, end_year):
+        sql = f"""select dois.doi, dois.full_path, dois.published_date, scans.title, scans.score, matches.notes
+                    from scans,
+                         dois,
+                         matches
+                             left join matches m on dois.doi = m.doi
+                    where matches.doi = scans.doi
+                      and scans.doi = dois.doi
+                      and matches.digital_only is NULL
+                      and dois.{self.sql_year_restriction(start_year, end_year)} 
+                      and scans.score is not null
+                      and length(matches.notes) > 0
+                      and score > 0
+                    order by score desc
+        """
+
+        candidates = DBConnection.execute_query(sql)
+        for candidate in candidates:
+            doi = candidate[0]
+            full_path = candidate[1]
+            published_date = candidate[2]
+            title = candidate[3]
+            score = candidate[4]
+            notes = candidate[5]
+            self.matches.append(Match(doi, score, title, full_path, published_date, notes=notes))
+
+        for match in self.matches:
+            self.prompt_digital(match)
 
     def get_lineage(self, word, verbose=False):
         name2taxid = ncbi.get_name_translator([word])
@@ -273,16 +306,44 @@ class Validator(Utils):
             elif option == "l":
                 match.print_matched_lines()
 
+    def prompt_digital(self, match):
+        exit = False
+        while not exit:
+            digital_only = None
+            match.print()
+            title = match.title
+            self.analyze_title(title)
+            option = input("digital only? y/n/(o)pen,(l)ines,(s)kip")
+            option = option.lower()
+            if option == "o":
+                match.open()
+
+            elif option == "y":
+                digital_only = True
+                exit = True
+            elif option == "s":
+                exit = True
+            elif option == "n":
+                digital_only = False
+                exit = True
+            elif option == "d":
+                match.update(ignore=True, collection="None")
+                exit = True
+            elif option == "l":
+                match.print_matched_lines()
+        match.update(False, digital_only=digital_only)
+
     def prompt_add_type(self, match):
         collection_type = None
         while collection_type is None:
-            option = input("Herpetology(H) Ichthyology(I) O&M(O) IZ&G(Z) Anthropology(A) Entomology(E) Botany(B) Other(O)")
+            option = input(
+                "Herpetology(H) Ichthyology(I) O&M(M) IZ&G(Z) Anthropology(A) Entomology(E) Botany(B) Other(O) Library(l)")
             option = option.lower()
             if option == "h":
                 collection_type = "herpetology"
             elif option == "i":
                 collection_type = "ichthyology"
-            elif option == "o":
+            elif option == "m":
                 collection_type = "o&m"
             elif option == "z":
                 collection_type = "iz&g"
@@ -294,4 +355,6 @@ class Validator(Utils):
                 collection_type = "botany"
             elif option == "o":
                 collection_type = "other"
+            elif option == "l":
+                collection_type = "library"
         match.update(ignore=False, collection=collection_type)

@@ -1,6 +1,8 @@
 # Citations finder for natural history museums
 
-Locates citations in literature for a single natural history museum.
+Locates citations in literature for a single natural history museum. This is meant to supplement
+literature references which do not include usage of museum collections. Distinguishes between purely
+electronic collections (databses and other projects) and physcial collections.
 
 ## Approach
 
@@ -57,9 +59,9 @@ config.ini contains initial configuration. An example config.ini is in config.te
 
 
 3. **scan**
-   
-   Scans are the results of the automated scoring process. They are not vetted by humans - after scans run 
-   through the scoring process (this step) 
+
+   Scans are the results of the automated scoring process. They are not vetted by humans - after scans run
+   through the scoring process (this step)
    Generates a score for each paper of interest. On instantiation, scan either loads the existing scan and
    score from the scans table in the database or if absent, it initialises these values and converts PDFs to
    txt.
@@ -124,18 +126,19 @@ Currently only tested on mac. create a virtual environment using the requirement
 * PDF directory is flat; should with one directory per issn, at least, and possibly per year. Write
   converter for existing downloads and then update the Utils.get_filename_from_doi_string function.
 
-* fix and test crossref downloader
+* fix and test crossref downloader (may be subsumed in unpaywall.org?)
 
 * Generalize to work on windows - use os.path.join instead of slashes
 
 * scan for collection ids should be "Scan for specimen IDs"
 
 * We're hitting a lot of ddos protections. Detect this condition and Integrate with a VPN (ala nord vpn)
-  to auto rotate the origin IP to see if this gets around the ddos wall.
+  to auto rotate the origin IP to see if this gets around the ddos wall. [no known vpn api works on mac, 
+  more research required]
 
 * put custom phrases to scan for (and scoring) into config.ini
 
-* archive.org downloader
+* archive.org downloader (may be subsumed in unpaywall.org)
 
 * in scan: Check for duplicate paper titles
 
@@ -162,7 +165,7 @@ Currently only tested on mac. create a virtual environment using the requirement
 
 * note known failure case - we don't always OCR 90 degree rotated tables
 
-* journals.tsv has good coverage for herp. Everything else could be expanded.
+* journals.tsv has good coverage for herp, IZ. Everything else could be expanded.
 
 * parallelize the scan
 
@@ -178,7 +181,7 @@ Currently only tested on mac. create a virtual environment using the requirement
 
 * Impact factor for our references per crossref?
 
-* gather metrics from antweb
+* gather metrics from digital collections?
 
 * Scan doi repo for string, compare to google scholar
 
@@ -186,9 +189,6 @@ Currently only tested on mac. create a virtual environment using the requirement
 
 * Support adding PDFs from journals that lack DOIs. e.g.: Herpetological Conservation & Biology
 
-* Add iNaturalist, antcat, antweb to copyout (may be done for latter two)
-
-# "biology centre cas" is being scored at 20 instgead of -200 in scan.py
-
+# Test that hypehens and colons are parsed correctly in the regular expression search sets
 
 

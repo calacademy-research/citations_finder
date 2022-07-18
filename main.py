@@ -104,7 +104,13 @@ def setup():
         validate_start_year = config.get_int('validate', 'validate_start_year')
         validate_end_year = config.get_int('validate', 'validate_end_year')
         validator = Validator()
-        validator.audit(validate_start_year, validate_end_year)
+        regular_prompts = config.get_boolean('validate', 'regular_prompts')
+        if regular_prompts:
+            validator.audit(validate_start_year, validate_end_year)
+        digital_prompts = config.get_boolean('validate', 'digital_prompts')
+        # doesn't work until the regular validation sequence is completed.
+        if digital_prompts:
+            validator.audit_digital_only(validate_start_year, validate_end_year)
 
     copyout_enabled = config.get_boolean('copyout', 'enabled')
     if copyout_enabled:
@@ -122,6 +128,8 @@ def setup():
                 copyout.dump_custom("antcat", target_dir)
                 copyout.dump_custom("antweb", target_dir)
                 copyout.dump_custom("inaturalist", target_dir)
+                copyout.dump_custom("catalog of fishes", target_dir)
+
 
     # validator.copy_matches("2016_found")
 
