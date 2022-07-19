@@ -191,4 +191,14 @@ Currently only tested on mac. create a virtual environment using the requirement
 
 # Test that hypehens and colons are parsed correctly in the regular expression search sets
 
+# Examine GBIF literature search: https://www.gbif.org/resource/search?contentType=literature&year=2021,2022&literatureType=journal&gbifDatasetKey=f934f8e2-32ca-46a7-b2f8-b032a4740454
+# https://www.gbif.org/developer/literature API here. Pull all referenced DOIs?
+
+# Use GBIF literature search above to find more potential journals to scan. Possibly in an
+# automated way, and pull the ISSNs from the above search to populate journals.tsv if they're missing,
+# or perhaps place them directly into the jouirnals db record.
+
+
+
+
 
