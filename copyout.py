@@ -20,8 +20,7 @@ class CopyOut(Utils):
                     matches.notes, 
                     matches.digital_only 
                     from matches, dois where matches.doi = dois.doi and 
-                    matches.ignore = 0   
-                    and matches.digital_only is not NULL and
+                    matches.ignore = 0 and
                     dois.{self.sql_year_restriction(self.year, self.year)} order by collection,dois.published_date"""
         results = DBConnection.execute_query(sql)
         return results
@@ -66,8 +65,9 @@ class CopyOut(Utils):
         notes = cur_match[6]
         digital_only = cur_match[7]
         title = self.clean_string(doi_record.get_title())
-        filehandle.write(
-            f"{doi}\t{collection}\t{journal_title}\t{title}\t{published_date}\t{date_added}\t{notes}\t{digital_only}")
+        write_string = f"{doi}\t{collection}\t{journal_title}\t{title}\t{published_date}\t{date_added}\t{notes}\t{digital_only}"
+        write_string = write_string.replace('None', '-')
+        filehandle.write(write_string)
         sql = f"select identifier from matched_collection_ids where matched_collection_ids.doi='{doi}'"
         results = DBConnection.execute_query(sql)
 
@@ -97,6 +97,8 @@ class CopyOut(Utils):
         db = DoiDatabase()
         filename = f"{path}/matched_{self.year}_{special_note_string}.tsv"
         fh = open(filename, "w")
+        fh.write("doi\tcollection\tjournal_title\ttitle\tpublished_date\tdate_added\tnotes\tdigital_only\n")
+
         for cur_match in self.get_matches():
             sql = f"select line from found_scan_lines where doi = '{cur_match[0]}'"
             scan_db_results = DBConnection.execute_query(sql)

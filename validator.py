@@ -17,7 +17,7 @@ ncbi = NCBITaxa()
 
 # f"{Fore.MAGENTA + self.chromosome.id + Fore.WHITE}:" \
 class Match(Utils):
-    def __init__(self, doi, score, title, full_path, published_date, notes=None, digital_only=None):
+    def __init__(self, doi, score, title, full_path, published_date, notes=None, digital_only=None, collection=None):
         self.doi = doi
         self.score = score
         self.title = title
@@ -25,6 +25,7 @@ class Match(Utils):
         self.full_path = full_path
         self.notes = notes
         self.digital_only = digital_only
+        self.collection = collection
 
     def generate_notes(self):
         flag_notes = ['inaturalist', 'antweb', 'antcat', 'catalog of fishes']
@@ -154,6 +155,7 @@ class Validator(Utils):
                                     order by score desc 
         """
 
+
         candidates = DBConnection.execute_query(sql)
         for candidate in candidates:
             doi = candidate[0]
@@ -168,7 +170,7 @@ class Validator(Utils):
             self.prompt(match)
 
     def audit_digital_only(self, start_year, end_year):
-        sql = f"""select dois.doi, dois.full_path, dois.published_date, scans.title, scans.score, matches.notes
+        sql = f"""select dois.doi, matches.collection, dois.full_path, dois.published_date, scans.title, scans.score, matches.notes
                     from scans,
                          dois,
                          matches
@@ -186,12 +188,13 @@ class Validator(Utils):
         candidates = DBConnection.execute_query(sql)
         for candidate in candidates:
             doi = candidate[0]
-            full_path = candidate[1]
-            published_date = candidate[2]
-            title = candidate[3]
-            score = candidate[4]
-            notes = candidate[5]
-            self.matches.append(Match(doi, score, title, full_path, published_date, notes=notes))
+            collection = candidate[1]
+            full_path = candidate[2]
+            published_date = candidate[3]
+            title = candidate[4]
+            score = candidate[5]
+            notes = candidate[6]
+            self.matches.append(Match(doi, score, title, full_path, published_date, notes=notes, collection=collection))
 
         for match in self.matches:
             self.prompt_digital(match)
@@ -331,7 +334,7 @@ class Validator(Utils):
                 exit = True
             elif option == "l":
                 match.print_matched_lines()
-        match.update(False, digital_only=digital_only)
+        match.update(False, collection=match.collection,digital_only=digital_only)
 
     def prompt_add_type(self, match):
         collection_type = None
@@ -357,4 +360,6 @@ class Validator(Utils):
                 collection_type = "other"
             elif option == "l":
                 collection_type = "library"
+            elif option == "g":
+                collection_type = "geology"
         match.update(ignore=False, collection=collection_type)
