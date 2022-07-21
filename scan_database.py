@@ -14,9 +14,6 @@ class ScanDatabase(Utils):
         super().__init__()
         if reset_scan_database:
             self._create_scans_database_table(reset_scan_database)
-            self.scans = None
-        else:
-            self.load_scans()
         self.doi_db = doi_db
 
     def __str__(self):

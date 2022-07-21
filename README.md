@@ -189,16 +189,23 @@ Currently only tested on mac. create a virtual environment using the requirement
 
 * Support adding PDFs from journals that lack DOIs. e.g.: Herpetological Conservation & Biology
 
-# Test that hypehens and colons are parsed correctly in the regular expression search sets
+* Test that hypehens and colons are parsed correctly in the regular expression search sets
 
-# Examine GBIF literature search: https://www.gbif.org/resource/search?contentType=literature&year=2021,2022&literatureType=journal&gbifDatasetKey=f934f8e2-32ca-46a7-b2f8-b032a4740454
-# https://www.gbif.org/developer/literature API here. Pull all referenced DOIs?
+* Examine GBIF literature search: https://www.gbif.org/resource/search?contentType=literature&year=2021,
+  2022&literatureType=journal&gbifDatasetKey=f934f8e2-32ca-46a7-b2f8-b032a4740454 
 
-# Use GBIF literature search above to find more potential journals to scan. Possibly in an
-# automated way, and pull the ISSNs from the above search to populate journals.tsv if they're missing,
-# or perhaps place them directly into the jouirnals db record.
+  https://www.gbif.org/developer/literature API here. Pull all referenced DOIs?
 
+* Use GBIF literature search above to find more potential journals to scan. Possibly in an
+ automated way, and pull the ISSNs from the above search to populate journals.tsv if they're missing,
+ or perhaps place them directly into the jouirnals db record.
 
+* Bug: Scan is picking up "j, fong" (example) when it should be scanning only for "j. fong"
 
+* Bug: If we have two phrases with overlapping start words, only the short one is triggered. 
+  e.g.: "chinese academy of sciences" and "chinese" - the latter masks the former.
+
+* Todo: Add "cas number" to exclusion when above bug is fixed
+ 
 
 

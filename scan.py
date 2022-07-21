@@ -117,6 +117,8 @@ class Scan:
             self.textfile_path = doi_textfile
         return True
 
+    # This should be in config.ini, and it should be in a "names" section that expands
+    # each name into each of the three forms
     @classmethod
     def _get_collection_manager_names(cls):
         collection_manager_names = [
@@ -127,6 +129,12 @@ class Scan:
             ("johanna loacker", 1000),
             ("j. loacker", 200),
             ("j loacker", 200),
+            ("c garcia",200),
+            ("c. garcia", 200),
+            ("maricela abarca", 200),
+            ("m abarca", 200),
+            ("m. abarca", 200),
+            ("Christine Garcia",200),
             ("David Catania", 1000),
             ("lauren scheinberg", 1000),
             ("c. piotrowski", 200),
@@ -164,6 +172,7 @@ class Scan:
                                     ("CAS-SUR", 200),
                                     ("CAS-SU", 200),
                                     ("CAS:SU", 200),
+                                    ("CASG", 200),
                                     ("CAS:ICH", 200),
                                     ("CAS-ICH", 200),
                                     ("CASTYPE", 200),
