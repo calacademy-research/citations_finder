@@ -194,7 +194,7 @@ Currently only tested on mac. create a virtual environment using the requirement
 * Examine GBIF literature search: https://www.gbif.org/resource/search?contentType=literature&year=2021,
   2022&literatureType=journal&gbifDatasetKey=f934f8e2-32ca-46a7-b2f8-b032a4740454 
 
-  https://www.gbif.org/developer/literature API here. Pull all referenced DOIs?
+l API here. Pull all referenced DOIs?
 
 * Use GBIF literature search above to find more potential journals to scan. Possibly in an
  automated way, and pull the ISSNs from the above search to populate journals.tsv if they're missing,
@@ -206,6 +206,13 @@ Currently only tested on mac. create a virtual environment using the requirement
   e.g.: "chinese academy of sciences" and "chinese" - the latter masks the former.
 
 * Todo: Add "cas number" to exclusion when above bug is fixed
+
+* TODO: (potentially very bad) - in scan.py: 
+  this only encompasses a few of the tags we end up scanning for
+  in more detail with user specified things later - and I think it's currently the screening
+  step. that's bad; let's review to ensure that the top level screen encompasses
+  all the strings currently in _get_collection_manager_names and
+  _get_scored_strings.
  
 
 

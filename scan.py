@@ -8,6 +8,11 @@ from doi_entry import DoiFactory
 
 
 class Scan:
+    # TODO: this only encompasses a few of the tags we end up scanning for
+    # in more detail with user specified things later - and I think it's currently the screening
+    # step. that's bad; let's review to ensure that the top level screen encompasses
+    # all the strings currently in _get_collection_manager_names and
+    # _get_scored_strings.
     collection_tag_regex = '(([ \(\[])+|^)(?i)cas(ent)*(c)*(iz)*[: ]+[ ]*[0-9\-]+'
 
     def __init__(self, doi_object=None, doi_string=None):
