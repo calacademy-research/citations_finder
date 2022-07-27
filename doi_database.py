@@ -42,19 +42,8 @@ class DoiDatabase(Utils):
         if start_year is not None:
             self._query_journals(start_year)
 
-    @staticmethod
-    def _create_tables():
-        sql_create_database_table = """ CREATE TABLE IF NOT EXISTS journals (
-                                            issn text primary key NOT NULL,
-                                            name text,
-                                            type text,
-                                            start_year INT,
-                                            end_year INT
-                                        ); """
-        DBConnection.execute_query(sql_create_database_table)
 
     def _setup(self):
-        self._create_tables()
         CrossrefJournalEntry.create_tables()
         DoiEntry.create_tables()
 
