@@ -27,7 +27,8 @@ class Config():
 
     def get_list(self, section, param):
         results = self.get_string(section, param)
+        results = results.replace('\n', '')
         if len(results) == 0:
             return None
         else:
-            return json.loads(self.get_string(section, param))
+            return eval(results)
