@@ -67,3 +67,7 @@ class Downloaders:
             if downloader.download(doi_entry):
                 return True
         return False
+
+    def create_tables(self):
+        for downloader in self.downloaders:
+            downloader.create_tables()

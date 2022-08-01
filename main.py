@@ -40,11 +40,14 @@ def retry_failed_unpaywall_links(config):
             doi_entry.mark_successful_download()
 
 
+
 #  More may need to be added here; this is for efficency;
 # most elements create on class instatntiation, but we potentially
 # hit create here so many times that it belongs in a run-once place.
 def setup_tables():
     CrossrefJournalEntry.create_tables()
+    downloaders = Downloaders()
+    downloaders.create_tables()
 
 
 # TODO: smoe missing pdfs are marked as downloaded, we need a cross check step to mark

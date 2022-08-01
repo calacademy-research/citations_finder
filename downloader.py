@@ -66,6 +66,10 @@ class Downloader(ABC, Utils):
     def download(self, doi_entry):
         raise NotImplementedError()
 
+    @abstractmethod
+    def create_tables(self):
+        raise NotImplementedError()
+
     class TimeoutError(Exception):
         pass
 

@@ -12,6 +12,7 @@ class DatabaseReport:
         self.dois = None
         self._load_dois(journal=journal)
 
+
     def _sql_date_suffix(self, and_var=True):
         retval = ""
         if self.start_year is not None and self.end_year is not None:

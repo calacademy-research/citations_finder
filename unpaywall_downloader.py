@@ -20,11 +20,11 @@ class UnpaywallDownloader(Downloader, Utils):
         self.error_code = None
         self.error_code = None
         self.firefox_failure = None
-        self._create_tables()
+        self.create_tables()
 
 
-
-    def _create_tables(self):
+    @classmethod
+    def create_tables(self):
         sql_create_database_table = """ create table IF NOT EXISTS unpaywall_downloader
                                         (
                                             doi TEXT primary key,
