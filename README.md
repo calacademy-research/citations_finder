@@ -30,7 +30,12 @@ DOIs, thusly:
 
 Ensure any existing PDFs conform to this format, place them in said directory, and run
 verify. Instead of downloading, the verification step will import the existing PDFs into the
-database.
+database. [needs testing]
+
+Note that if your doi_database is empty (i.e. if you haven't done the initial and/or forced
+download for crossref in config.ini) you can still import these papers by using the "import_pdfs"
+function in doi_database.db. currently this would need to be hardcoded for a one-time run in 
+main.py
 
 # Steps
 
