@@ -126,44 +126,8 @@ class Scan:
     # each name into each of the three forms
     @classmethod
     def _get_collection_manager_names(cls):
-        collection_manager_names = [
-            ("J. vindum", 1000),
-            ("c. grinter", 200),
-            ("christopher grinter", 1000),
-            ("christina piotrowski", 1000),
-            ("johanna loacker", 1000),
-            ("j. loacker", 200),
-            ("j loacker", 200),
-            ("c garcia",200),
-            ("c. garcia", 200),
-            ("maricela abarca", 200),
-            ("m abarca", 200),
-            ("m. abarca", 200),
-            ("Christine Garcia",200),
-            ("David Catania", 1000),
-            ("lauren scheinberg", 1000),
-            ("c. piotrowski", 200),
-            ("c piotrowski", 200),
-            ("j. fong", 200),
-            ("shevock", 200),
-            ("j. shevock", 300),
-            ("j shevock", 300),
-            ("seth cotterell", 300),
-            ("s cotterell", 300),
-            ("s. cotterell", 300),
-            ("j fong", 200),
-            ("jon fong", 200),
-            ("d. Catania", 200),  # studi di catania, italy received: june 30, 2016
-            ("d Catania", 200),
-            ("w. pulawski", 100),
-            ("w pulawski", 100),
-            ("wojciech pulawski", 100),
-            ("L. scheinberg", 200),
-            ("D.H.Kavanaugh", 200),
-            ("D.H. Kavanaugh", 200),
-            ("C.E Griswold", 200),
-            ("C.E. Griswold", 200),
-        ]
+        config = Config()
+        collection_manager_names = config.get_list('names', 'collection_manager_names')
         return collection_manager_names
 
     @classmethod

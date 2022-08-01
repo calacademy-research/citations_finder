@@ -1,0 +1,9 @@
+colorama==0.4.5
+ete3==3.1.2
+more_itertools==8.13.0
+pyautogui==0.9.53
+pyenchant==3.2.2
+requests==2.28.1
+selenium==4.3.0
+tabulate==0.8.10
+unpywall==0.2
