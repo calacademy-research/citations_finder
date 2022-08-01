@@ -83,11 +83,11 @@ class DoiDatabase(Utils):
                     print(f"Parsing error: {line}, skipping.")
                     continue
 
-                # print(f"Downloading {journal} issn: {issn} starting year: {start_year}", end='')
-                # if type is None:
-                #     print("")
-                # else:
-                #     print(f" Type: {type}")
+                print(f"Downloading {journal} issn: {issn} starting year: {start_year}", end='')
+                if type is None:
+                    print("")
+                else:
+                    print(f" Type: {type}")
 
                 if self._check_journal_record(issn, start_year):
                     self.download_issn(issn, start_year)
@@ -297,7 +297,8 @@ class DoiDatabase(Utils):
                 try:
                     DoiEntry(item)
                 except EntryExistsException as e:
-                    print(f"DOI already in database, skipping: {e}")
+                    # print(f"DOI already in database, skipping: {e}")
+                    print(".",end='')
             else:
                 # "journal-issue"
                 # print(f"got type: {type}")
