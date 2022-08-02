@@ -117,6 +117,8 @@ class DoiDatabase(Utils):
             sql = f"INSERT OR REPLACE INTO journals (issn,name, type,start_year,end_year) VALUES ('{issn}','{name}','{type}',{start_year},{date.today().year})"
             results = DBConnection.execute_query(sql)
 
+    # not referenced anywhere at present; invoke from main per README
+
     # Scans through existing PDFs in the directory
     # If they're present, create or update the DoiEntry
     # in the database.
@@ -128,15 +130,10 @@ class DoiDatabase(Utils):
 
     def import_pdfs(self, directory="./"):
         pdf_files = glob.glob(os.path.join(directory, "*.pdf"))
-        query_count = 0
         total_count = 0
         for pdf_file in pdf_files:
             doi_string = self.get_doi_from_path(pdf_file)
-
-            doi_entry = DoiEntry(doi_string)
-            if doi_entry.details is None:
-                query_count += 1
-                doi_entry = self._populate_metadata(doi_string, doi_entry)
+            doi_entry = self._populate_metadata(doi_string, doi_entry)
             total_count += 1
             if total_count % 10 == 0:
                 print(f"Done {total_count} out of {len(pdf_files)}")
