@@ -50,7 +50,7 @@ def setup_tables():
     downloaders.create_tables()
 
 
-# TODO: smoe missing pdfs are marked as downloaded, we need a cross check step to mark
+# TODO: some missing pdfs are marked as downloaded, we need a cross check step to mark
 # missing as missing.
 def setup():
     config = Config()

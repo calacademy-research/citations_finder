@@ -29,11 +29,10 @@ DOIs, thusly:
     dest_path = sanitized_identifier + ".pdf"
 
 Ensure any existing PDFs conform to this format, place them in said directory, and run
-verify. Instead of downloading, the verification step will import the existing PDFs into the
-database. [needs testing]
+verify. Verify will use downloaded papers when available. 
 
 Note that if your doi_database is empty (i.e. if you haven't done the initial and/or forced
-download for crossref in config.ini) you can still import these papers by using the "import_pdfs"
+download for crossref in config.ini) you can import these papers by using the "import_pdfs"
 function in doi_database.db. currently this would need to be hardcoded for a one-time run in 
 main.py
 
@@ -212,12 +211,16 @@ l API here. Pull all referenced DOIs?
 
 * Todo: Add "cas number" to exclusion when above bug is fixed
 
-* TODO: (potentially very bad) - in scan.py: 
+* TODO: bug in scanning (potentially very bad) - in scan.py: 
   this only encompasses a few of the tags we end up scanning for
   in more detail with user specified things later - and I think it's currently the screening
   step. that's bad; let's review to ensure that the top level screen encompasses
   all the strings currently in _get_collection_manager_names and
   _get_scored_strings.
+
+* TODO: doi_database downloading from crossref - api only presents with "oldest year", but
+    if the results come in date order it would be possbile to download specific years instead of oldest
+    to now. It is likely that this is so, someone should confirm with RTFM
  
 
 

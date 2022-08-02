@@ -14,7 +14,7 @@ from doi_entry import EntryExistsException
 from db_connection import DBConnection
 from database_report import DatabaseReport
 from downloaders import Downloaders
-import sys
+
 
 from datetime import date
 
@@ -132,27 +132,24 @@ class DoiDatabase(Utils):
         total_count = 0
         for pdf_file in pdf_files:
             doi_string = self.get_doi_from_path(pdf_file)
-            if doi_string in self.dois:
-                doi_entry = self.dois[doi_string]
-            else:
-                doi_entry = DoiEntry(doi_string)
+
+            doi_entry = DoiEntry(doi_string)
             if doi_entry.details is None:
                 query_count += 1
-                self._populate_metadata(doi_string, doi_entry)
-                if query_count % 50 == 0:
-                    self.save_database()
+                doi_entry = self._populate_metadata(doi_string, doi_entry)
             total_count += 1
             if total_count % 10 == 0:
                 print(f"Done {total_count} out of {len(pdf_files)}")
-        self.save_database()
+            doi_entry.downloaded=True
+            doi_entry.insert_database()
 
-    # def _populate_metadata(self,doi_string):
-    #     base_url = f"https://api.crossref.org/works/{doi_string}"
-    #
-    #     print(f"Querying crossref.org for metadata to build db: {base_url}")
-    #     results = self._get_url_(base_url)
-    #     item = results['message']
-    #     DoiEntry(item,do_not_download=True)
+    def _populate_metadata(self,doi_string):
+        base_url = f"https://api.crossref.org/works/{doi_string}"
+
+        print(f"Querying crossref.org for metadata to build db: {base_url}")
+        results = self._get_url_(base_url)
+        item = results['message']
+        return DoiEntry(item,do_not_download=True)
 
     def verify_dois_by_journal_size(self,
                                     start_year,
