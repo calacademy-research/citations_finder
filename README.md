@@ -50,9 +50,15 @@ config.ini contains initial configuration. An example config.ini is in config.te
 
    Ingests the list of targeted publications from journals.tsv. See settings; this is a no-op
    after the initial run. If it's not already marked in the database as complete,
-   downloads all the DOI data from crossref from each journal up to the year indicated. (crossref only
-   supports downloading from a given date until most recent). Downlads from crossref "politely" using
-   a back-off algorithm to not saturate their site.
+   downloads all the DOI data from crossref from each in the year range indicated.
+   
+
+   Currently won't download papers newer than the oldest requested. In other words, if at any time users
+requested papers from, say, 2014 and ONLY 2014, the system will assume that papers newer than
+2014 have all been downloded. In case of partial downloads use force-download option for missing years.
+
+
+   Downloads from crossref "politely" using a back-off algorithm to not saturate their site.
 
 
 1. **verify (downloaders)**

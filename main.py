@@ -40,7 +40,6 @@ def retry_failed_unpaywall_links(config):
             doi_entry.mark_successful_download()
 
 
-
 #  More may need to be added here; this is for efficency;
 # most elements create on class instatntiation, but we potentially
 # hit create here so many times that it belongs in a run-once place.
@@ -64,7 +63,8 @@ def setup():
         retry_failed_unpaywall_links(config)
         sys.exit(0)
 
-    db = DoiDatabase(config.get_int('crossref', 'scan_for_dois_after_year'))
+    db = DoiDatabase(config.get_int('crossref', 'scan_for_dois_after_year'),
+                     config.get_int('crossref', 'scan_for_dois_before_year'))
     if config.get_boolean('crossref', 'force_update'):
         db.force_crossref_update(config.get_int('crossref', 'force_update_year'))
     if config.get_boolean('general', 'report_on_start'):
@@ -121,7 +121,7 @@ def setup():
         copyout_end_year = config.get_int('copyout', 'copyout_end_year')
         target_dir = config.get_string('copyout', 'target_dir')
 
-        for cur_year in range(copyout_start_year, copyout_end_year+1):
+        for cur_year in range(copyout_start_year, copyout_end_year + 1):
             print(f"Exporting year {cur_year}")
             copyout = CopyOut(cur_year)
             if config.get_boolean('copyout', 'copyout_pdfs'):
@@ -132,7 +132,6 @@ def setup():
                 copyout.dump_custom("antweb", target_dir)
                 copyout.dump_custom("inaturalist", target_dir)
                 copyout.dump_custom("catalog of fishes", target_dir)
-
 
     # validator.copy_matches("2016_found")
 

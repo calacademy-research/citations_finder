@@ -44,16 +44,19 @@ class DoiFactory:
 
 class DoiEntry(Utils):
     # if json is populated
-    def __init__(self, doi_details=None, skip_setup=False):
+    def __init__(self, doi_details=None, skip_setup=False, downloaded=False):
         super().__init__()
         if skip_setup:
             return
         self.issn = doi_details['ISSN'][0]
         self.doi = doi_details['DOI']
+        self.details = doi_details
+
+        # print(f"attempting DOI with New date: {self.get_date()}")
+
         if self._check_exists():
             raise EntryExistsException(self.doi)
-        self.downloaded = False
-        self.details = doi_details
+        self.downloaded = downloaded
         self.date = self.get_date()
         if doi_details['type'] == 'journal':
             raise TypeError("Journal not paper")
@@ -61,7 +64,10 @@ class DoiEntry(Utils):
             raise TypeError(f"Not a journal article: {doi_details['type']}")
         # should be duplicate of ISSN reference, but we'll leave it for now
         self.journal_title = doi_details['container-title'][0]
-        self.full_path = None
+        if downloaded:
+            self.full_path = self.generate_file_path()
+        else:
+            self.full_path = None
 
         self.insert_database()
 

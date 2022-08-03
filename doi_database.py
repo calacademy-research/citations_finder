@@ -15,7 +15,6 @@ from db_connection import DBConnection
 from database_report import DatabaseReport
 from downloaders import Downloaders
 
-
 from datetime import date
 
 
@@ -35,13 +34,14 @@ class DoiDatabase(Utils):
     # "do_verify" scans through all DOI records. If the PDF is already
     # downloaded, it populates the record accordingly.
     def __init__(self,
-                 start_year=None):
+                 start_year=None,
+                 end_year=None):
         super().__init__()
 
         self._setup()
         if start_year is not None:
-            self._query_journals(start_year)
-
+            assert end_year is not None, "If scanning must provide both a start and an end year"
+            self._query_journals(start_year, end_year)
 
     def _setup(self):
         CrossrefJournalEntry.create_tables()
@@ -54,7 +54,7 @@ class DoiDatabase(Utils):
     # Updates the table "journals" with the "start year" passed in here
     # and "end year" being the current year. Journals table doesn't get an
     # entry until an attempt to query DOIs from crossref has happened.
-    def _query_journals(self, start_year):
+    def _query_journals(self, start_year, end_year):
         with open('journals.tsv', 'r') as tsvin:
             for line in csv.reader(tsvin, delimiter='\t'):
                 try:
@@ -72,24 +72,25 @@ class DoiDatabase(Utils):
                     print(f"Parsing error: {line}, skipping.")
                     continue
 
-                print(f"Downloading {journal} issn: {issn} starting year: {start_year}", end='')
+                print(f"Downloading {journal} issn: {issn} starting year: {start_year} ending year {end_year}", end='')
                 if type is None:
                     print("")
                 else:
                     print(f" Type: {type}")
 
                 if self._check_journal_record(issn, start_year):
-                    self.download_issn(issn, start_year)
+                    self.download_issn(issn, start_year, end_year)
                     self._update_journal_record(issn, start_year, journal, type)
 
     def force_crossref_update(self, start_year):
+        end_year = start_year
         query = f"select issn,name,type from journals"
         results = DBConnection.execute_query(query)
         for jounral in results:
             issn = jounral[0]
             name = jounral[1]
             type = jounral[2]
-            self.download_issn(issn, start_year)
+            self.download_issn(issn, start_year, end_year)
             self._update_journal_record(issn, start_year, name, type)
 
     def _get_issn_oldest_year(self, issn):
@@ -133,20 +134,15 @@ class DoiDatabase(Utils):
         total_count = 0
         for pdf_file in pdf_files:
             doi_string = self.get_doi_from_path(pdf_file)
-            doi_entry = self._populate_metadata(doi_string, doi_entry)
+            base_url = f"https://api.crossref.org/works/{doi_string}"
+
+            print(f"Querying crossref.org for metadata to build db: {base_url}")
+            results = self._get_url_(base_url)
+            item = results['message']
+            DoiEntry(item, downloaded=True)
             total_count += 1
             if total_count % 10 == 0:
                 print(f"Done {total_count} out of {len(pdf_files)}")
-            doi_entry.downloaded=True
-            doi_entry.insert_database()
-
-    def _populate_metadata(self,doi_string):
-        base_url = f"https://api.crossref.org/works/{doi_string}"
-
-        print(f"Querying crossref.org for metadata to build db: {base_url}")
-        results = self._get_url_(base_url)
-        item = results['message']
-        return DoiEntry(item,do_not_download=True)
 
     def verify_dois_by_journal_size(self,
                                     start_year,
@@ -189,14 +185,11 @@ class DoiDatabase(Utils):
             raise FileNotFoundError(f"No such doi: {doi} or multiple results")
         return doi[0]
 
-    def ensure_downloaded_has_pdf(self,start_year,end_year):
-        dois = self.get_dois(start_year,end_year)
+    def ensure_downloaded_has_pdf(self, start_year, end_year):
+        dois = self.get_dois(start_year, end_year)
         for doi_entry in dois:
             doi_entry.check_file()
             doi_entry.update_database()
-
-
-
 
     # Ensures that all DOIs in the database have associated files
     # Download, if not.
@@ -224,8 +217,8 @@ class DoiDatabase(Utils):
     def is_downloaded(self, doi_entry):
         return doi_entry.downloaded
 
-    def download_issn(self, issn, start_year):
-        base_url = f"https://api.crossref.org/journals/{issn}/works?filter=from-created-date:{start_year}&rows=1000&cursor="
+    def download_issn(self, issn, start_year, end_year):
+        base_url = f"https://api.crossref.org/journals/{issn}/works?filter=from-pub-date:{start_year},until-pub-date:{end_year}&rows=1000&cursor="
         cursor = "*"
         done = False
         total_items_processed = 0
@@ -281,7 +274,7 @@ class DoiDatabase(Utils):
                     DoiEntry(item)
                 except EntryExistsException as e:
                     # print(f"DOI already in database, skipping: {e}")
-                    print(".",end='')
+                    print(".", end='')
             else:
                 # "journal-issue"
                 # print(f"got type: {type}")
