@@ -139,7 +139,7 @@ class DoiDatabase(Utils):
             print(f"Querying crossref.org for metadata to build db: {base_url}")
             results = self._get_url_(base_url)
             item = results['message']
-            DoiEntry(item, downloaded=True)
+            DoiEntry(item, downloaded=True, raise_exception_if_exists=False)
             total_count += 1
             if total_count % 10 == 0:
                 print(f"Done {total_count} out of {len(pdf_files)}")

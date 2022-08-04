@@ -44,7 +44,7 @@ class DoiFactory:
 
 class DoiEntry(Utils):
     # if json is populated
-    def __init__(self, doi_details=None, skip_setup=False, downloaded=False):
+    def __init__(self, doi_details=None, skip_setup=False, downloaded=False, raise_exception_if_exists=True):
         super().__init__()
         if skip_setup:
             return
@@ -53,9 +53,12 @@ class DoiEntry(Utils):
         self.details = doi_details
 
         # print(f"attempting DOI with New date: {self.get_date()}")
-
-        if self._check_exists():
+        if self._check_exists() and raise_exception_if_exists:
             raise EntryExistsException(self.doi)
+        elif self._check_exists():
+            print(f"{self.doi} already exists")
+            return
+            
         self.downloaded = downloaded
         self.date = self.get_date()
         if doi_details['type'] == 'journal':
