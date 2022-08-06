@@ -30,7 +30,7 @@ class DoiFactory:
             details = cur_doi_json[5]
             full_path = cur_doi_json[6]
 
-            new_doi = DoiEntry(skip_setup=True)
+            new_doi = DoiEntry()
             new_doi.details = json.loads(details)
             new_doi.doi = doi
             new_doi.issn = issn
@@ -44,22 +44,31 @@ class DoiFactory:
 
 class DoiEntry(Utils):
     # if json is populated
-    def __init__(self, doi_details=None, skip_setup=False, downloaded=False, raise_exception_if_exists=True):
+    # Valid setup_type: None, 'download_chunk', 'import_pdfs'
+    def __init__(self, setup_type=None, doi_details=None):
         super().__init__()
-        if skip_setup:
+        if setup_type == None:
             return
+        elif setup_type == 'download_chunk':
+            self._setup(doi_details)
+            self.downloaded = False
+            self.full_path = None
+        elif setup_type == 'import_pdfs':
+            self._setup(doi_details)
+            self.downloaded = True
+            self.full_path = self.generate_file_path()
+        else:
+            raise ValueError(f"DoiEntry __init__: Invalid setup_type '{setup_type}'")
+
+        self.insert_database()
+
+    def _setup(self, doi_details):
         self.issn = doi_details['ISSN'][0]
         self.doi = doi_details['DOI']
         self.details = doi_details
-
         # print(f"attempting DOI with New date: {self.get_date()}")
-        if self._check_exists() and raise_exception_if_exists:
+        if self._check_exists():
             raise EntryExistsException(self.doi)
-        elif self._check_exists():
-            print(f"{self.doi} already exists")
-            return
-            
-        self.downloaded = downloaded
         self.date = self.get_date()
         if doi_details['type'] == 'journal':
             raise TypeError("Journal not paper")
@@ -67,12 +76,6 @@ class DoiEntry(Utils):
             raise TypeError(f"Not a journal article: {doi_details['type']}")
         # should be duplicate of ISSN reference, but we'll leave it for now
         self.journal_title = doi_details['container-title'][0]
-        if downloaded:
-            self.full_path = self.generate_file_path()
-        else:
-            self.full_path = None
-
-        self.insert_database()
 
     def mark_successful_download(self):
         self.downloaded = True
