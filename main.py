@@ -62,6 +62,11 @@ def setup():
     if config.get_boolean('general', 'retry_failed_unpaywall_links'):
         retry_failed_unpaywall_links(config)
         sys.exit(0)
+    
+    if config.get_boolean('general', 'do_pdf_ingest'):
+        pdf_dir = config.get_string('general', 'pdf_ingest_directory')
+        d = DoiDatabase()
+        d.import_pdfs(pdf_dir, False)
 
     db = DoiDatabase(config.get_int('crossref', 'scan_for_dois_after_year'),
                      config.get_int('crossref', 'scan_for_dois_before_year'))
