@@ -17,7 +17,8 @@ headers = {
 
 
 class DoiFactory:
-
+    # TODO: Odd and bad that there are two ways to set up DoiEntry objects. We should use
+    # one or the other and enforce it, or at the very least clarify the two cases in comments.
     def __init__(self, sql):
         doi_sql_results = DBConnection.execute_query(sql)
 

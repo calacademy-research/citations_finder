@@ -14,6 +14,7 @@ from doi_entry import EntryExistsException
 from db_connection import DBConnection
 from database_report import DatabaseReport
 from downloaders import Downloaders
+from scan_database import ScanDatabase
 
 from datetime import date
 
@@ -46,6 +47,7 @@ class DoiDatabase(Utils):
     def _setup(self):
         CrossrefJournalEntry.create_tables()
         DoiEntry.create_tables()
+        ScanDatabase.create_tables()
 
     # Queries crossref for the history of the journal in question.
     # Crossref returns all records starting at the start_year until the

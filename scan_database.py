@@ -13,7 +13,7 @@ class ScanDatabase(Utils):
     def __init__(self, doi_db, reset_scan_database=False):
         super().__init__()
         if reset_scan_database:
-            self._create_scans_database_table(reset_scan_database)
+            self.create_tables(reset_scan_database)
         self.doi_db = doi_db
 
     def __str__(self):
@@ -22,7 +22,8 @@ class ScanDatabase(Utils):
         else:
             return (f"doi: {self.doi} Score: CONVERSION FAILURE title: {self.title}")
 
-    def _create_scans_database_table(self, reset_tables=False):
+    @classmethod
+    def create_tables(self, reset_tables=False):
         if reset_tables:
             try:
                 sql = "drop table scans"

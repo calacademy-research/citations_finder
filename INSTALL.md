@@ -29,3 +29,8 @@ Copy the contents of config.template.ini into a new file called config.ini and m
 
 ## Notes
 * For VSCode, make sure your Python interpreter is set to the path of your environment before running. You can check the by opening the Command Palette (Ctrl or Cmd + Shift + P) and clicking 'Python: Select Interpreter'. Click the refresh button if you don't see the environment path you created. 
+
+## FAQ/troubleshooting.
+
+  I'm getting "[SSL: CERTIFICATE_VERIFY_FAILED]"! Take a look at page 49, here: https://ncbi-taxonomist.readthedocs.io/_/downloads/en/stable/pdf/
+  
