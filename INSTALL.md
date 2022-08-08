@@ -16,15 +16,18 @@ In your terminal with the environment activated, type in the command:
 ```
 $ pip install pipreqs
 ```
-\* Try pip3 if pip doesn't work
+* Try pip3 if pip doesn't work
 
-## 3. Use requirements.txt to install packages
+## 3. Install packages
 In your terminal with the environment activated, type in the command:
 ```
 $ pip install -r requirements.txt
 ```
+### Additional installations required:
+* **pdftotext**
+    * Install instructions here: https://pypi.org/project/pdftotext/
 
-## 4. Set up config.ini file
+## 5. Set up config.ini file
 Copy the contents of config.template.ini into a new file called config.ini and modify to fit your needs
 
 ## Notes
