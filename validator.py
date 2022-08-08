@@ -109,14 +109,15 @@ class Validator(Utils):
     def __init__(self, reset_matches_database=False):
         self.matches = []
 
-        self._create_tables(reset_matches_database=reset_matches_database)
+        self.create_tables(reset_matches_database=reset_matches_database)
 
     def get_matched_paper_dois(self):
         sql = f"""select doi from matches where ignore=FALSE"""
         results = DBConnection.execute_query(sql)
         return [x[0] for x in results]
 
-    def _create_tables(self, reset_matches_database=False):
+    @classmethod
+    def create_tables(self, reset_matches_database=False):
         if reset_matches_database:
             sql = "drop table matches"
             DBConnection.execute_query(sql)
