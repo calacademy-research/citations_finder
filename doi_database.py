@@ -131,7 +131,7 @@ class DoiDatabase(Utils):
     # import_pdfs. If the pdfs are of unknown or mixed provenance, then this
     # is the way to go.
 
-    def import_pdfs(self, directory="./"):
+    def import_pdfs(self, directory="./", raise_exception_if_exist=True):
         pdf_files = glob.glob(os.path.join(directory, "*.pdf"))
         total_count = 0
         for pdf_file in pdf_files:
@@ -141,7 +141,13 @@ class DoiDatabase(Utils):
             print(f"Querying crossref.org for metadata to build db: {base_url}")
             results = self._get_url_(base_url)
             item = results['message']
-            DoiEntry(item, downloaded=True)
+            if raise_exception_if_exist:
+                DoiEntry('import_pdfs', item)
+            else:
+                try:
+                    DoiEntry('import_pdfs', item)
+                except EntryExistsException as e:
+                    print(f"DOI already in database, skipping: {e}")
             total_count += 1
             if total_count % 10 == 0:
                 print(f"Done {total_count} out of {len(pdf_files)}")
@@ -273,7 +279,7 @@ class DoiDatabase(Utils):
                 CrossrefJournalEntry(item)
             elif type == "journal-article":
                 try:
-                    DoiEntry(item)
+                    DoiEntry('download_chunk', item)
                 except EntryExistsException as e:
                     # print(f"DOI already in database, skipping: {e}")
                     print(".", end='')
