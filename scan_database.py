@@ -49,7 +49,8 @@ class ScanDatabase(Utils):
         sql_create_database_table = """ CREATE TABLE IF NOT EXISTS found_scan_lines (
                                             doi text,
                                             line text,
-                                            score integer
+                                            score integer,
+                                            matched_string text
                                         ); """
         DBConnection.execute_query(sql_create_database_table)
 

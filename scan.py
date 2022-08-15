@@ -13,10 +13,10 @@ class Scan:
     # step. that's bad; let's review to ensure that the top level screen encompasses
     # all the strings currently in _get_collection_manager_names and
     # _get_scored_strings.
-    collection_tag_regex = '(([ \(\[])+|^)(?i)cas(ent)*(c)*(iz)*[: ]+[ ]*[0-9\-]+'
+    config = Config()
+    collection_tag_regex = config.get_string('scan_search_keys', 'collection_tag_regex')
 
     def __init__(self, doi_object=None, doi_string=None):
-        self.config = Config()
         self.text_directory = self.config.get_string('scan', 'scan_text_directory')
         if not os.path.exists(self.text_directory):
             os.mkdir(self.text_directory)
@@ -67,10 +67,11 @@ class Scan:
         DBConnection.execute_query(sql_insert, args)
         if write_scan_lines and len(self.found_lines) > 0:
             for score_tuple in self.found_lines:
-                sql_insert = f"""insert into found_scan_lines (doi, line,score) VALUES (?,?,?)"""
+                sql_insert = f"""insert into found_scan_lines (doi, line, score, matched_string) VALUES (?,?,?,?)"""
                 args = [self.doi_string,
                         score_tuple[0],
-                        score_tuple[1]]
+                        score_tuple[1],
+                        score_tuple[2]]
                 DBConnection.execute_query(sql_insert, args)
 
     def _init_from_object(self, doi_object):
@@ -126,46 +127,21 @@ class Scan:
     # each name into each of the three forms
     @classmethod
     def _get_collection_manager_names(cls):
-        config = Config()
-        collection_manager_names = config.get_list('names', 'collection_manager_names')
+        collection_manager_names = cls.config.get_list('scan_search_keys', 'collection_manager_names')
         return collection_manager_names
 
     @classmethod
     def _get_scored_strings(cls):
         # Test that hypehens and colons are parsed correctly in the
         # reguar expression sets
-        string_set_pre_reference = [("CASC", 60),
-                                    ("CASIZ", 200),
-                                    ("izcas", -200),  # Chinese academy of sciences
-                                    ("CAS-SUA", 200),
-                                    ("CAS-SUR", 200),
-                                    ("CAS-SU", 200),
-                                    ("CAS:SU", 200),
-                                    ("CASG", 200),
-                                    ("CAS:ICH", 200),
-                                    ("CAS-ICH", 200),
-                                    ("CASTYPE", 200),
-                                    ("CASENT", 200),
-                                    ("antweb", 400),
-                                    ("antcat", 400),
-                                    ("inaturalist", 400),
-                                    ("catalog of fishes", 400),
-                                    ("CAS", 20),
-                                    ("center for comparative genomics", 100),
-                                    ("CAS HERP", 100),
-                                    ("CAS MAM", 100),
-                                    ("CAS ORN", 100),
-                                    ("chinese", -20),
-                                    ("Chinese Academy of Sciences", -100),
-                                    ("institute of botany cas", -200),  # https://www.bc.cas.cz/en/l
-                                    ("biology centre cas", -200)]  # https://www.bc.cas.cz/en/
+        string_set_pre_reference = cls.config.get_list('scan_search_keys', 'scored_strings')
         return string_set_pre_reference
 
     @classmethod
     def get_regex_score_tuples(cls):
         retval = []
         retval.append((cls.collection_tag_regex, 300))
-        retval.append(('((?i)california academy of science[s]?)', 200))
+        retval = retval + cls.config.get_list('scan_search_keys', 'additional_regex')
         for regex_tuple in Scan._get_scored_strings() + Scan._get_collection_manager_names():
             regex = regex_tuple[0].lower()
             retval.append((regex, regex_tuple[1]))
@@ -191,11 +167,9 @@ class Scan:
                 # print(f"Hyphens bad: {result}")
                 self.score -= 20
 
-        regex = '((?i)california academy of science[s]?)'
-        self._scan_with_regex(regex, 200, ok_after_references=False)
-
-        regex = '((?i)southern california academy of science[s]?)'
-        self._scan_with_regex(regex, -200, ok_after_references=False)
+        regex_list = self.config.get_list('scan_search_keys', 'additional_regex')
+        for regex, score in regex_list:
+            self._scan_with_regex(regex, score, ok_after_references=False)
 
         collection_manager_names = Scan._get_collection_manager_names()
 
@@ -283,7 +257,7 @@ class Scan:
                         # print(f"{self.textfile_path} possible: {cur_line}")
                         results.append(result.group(0))
                         found_count += 1
-                        self.found_lines.append((cur_line, score_per_line))
+                        self.found_lines.append((cur_line, score_per_line, result.group(0)))
                 cur_line = next_line
                 if ok_after_references is False:
                     if next_line == "references" in next_line or \
