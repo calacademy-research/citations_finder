@@ -83,15 +83,15 @@ def setup():
     # joe tie to config
     db.ensure_downloaded_has_pdf(2020, 2022)
 
-    verify_start_year = config.get_int('verify', 'verify_start_year')
-    verify_end_year = config.get_int('verify', 'verify_end_year')
+    download_start_year = config.get_int('download', 'download_start_year')
+    download_end_year = config.get_int('download', 'download_end_year')
 
-    if config.get_boolean('verify', 'verify_single_journal'):
-        db.verify_dois(verify_start_year, verify_end_year,
-                       journal=config.get_string('verify', 'verify_single_journal_issn'))
+    if config.get_boolean('download', 'download_single_journal'):
+        db.download_dois(download_start_year, download_end_year,
+                       journal=config.get_string('download', 'download_single_journal_issn'))
 
-    if config.get_boolean('verify', 'verify_all_journals'):
-        db.verify_dois_by_journal_size(verify_start_year, verify_end_year)
+    if config.get_boolean('download', 'download_all_journals'):
+        db.download_dois_by_journal_size(download_start_year, download_end_year)
 
     if config.get_boolean('scan', 'enabled'):
         scan_start_year = config.get_int('scan', 'scan_start_year')

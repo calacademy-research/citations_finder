@@ -33,7 +33,7 @@ class DoiDatabase(Utils):
     # the journals listed in journals.tsv. If the PDF already exists
     # then the full path is updated.
     #
-    # "do_verify" scans through all DOI records. If the PDF is already
+    # "do_download" scans through all DOI records. If the PDF is already
     # downloaded, it populates the record accordingly.
     def __init__(self,
                  start_year=None,
@@ -154,7 +154,7 @@ class DoiDatabase(Utils):
             if total_count % 10 == 0:
                 print(f"Done {total_count} out of {len(pdf_files)}")
 
-    def verify_dois_by_journal_size(self,
+    def download_dois_by_journal_size(self,
                                     start_year,
                                     end_year):
         sql = f'''SELECT journal_title,issn,count(doi)
@@ -172,7 +172,7 @@ class DoiDatabase(Utils):
             report = DatabaseReport(start_year, end_year, journal)
             print("\n")
             print(report.report(journal=journal, issn=issn, summary=False))
-            self.verify_dois(start_year, end_year, journal=journal, issn=issn)
+            self.download_dois(start_year, end_year, journal=journal, issn=issn)
 
     def _generate_select_sql(self, start_year, end_year, journal_issn, downloaded="FALSE"):
         select_dois = f"""select * from dois where downloaded={downloaded} """
@@ -204,7 +204,7 @@ class DoiDatabase(Utils):
     # Ensures that all DOIs in the database have associated files
     # Download, if not.
 
-    def verify_dois(self,
+    def download_dois(self,
                     start_year,
                     end_year,
                     journal=None,

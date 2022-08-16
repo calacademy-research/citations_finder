@@ -29,7 +29,7 @@ DOIs, thusly:
     dest_path = sanitized_identifier + ".pdf"
 
 Ensure any existing PDFs conform to this format, place them in said directory, and run
-verify. Verify will use downloaded papers when available. 
+download. Download will use downloaded papers when available. 
 
 Note that if your doi_database is empty (i.e. if you haven't done the initial and/or forced
 download for crossref in config.ini) you can import these papers by using the "import_pdfs"
@@ -61,7 +61,7 @@ requested papers from, say, 2014 and ONLY 2014, the system will assume that pape
    Downloads from crossref "politely" using a back-off algorithm to not saturate their site.
 
 
-1. **verify (downloaders)**
+1. **download (downloaders)**
 
    Runs the downloader modules (derived from class "downloader") in the order listed in modules.
 
