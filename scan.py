@@ -14,9 +14,9 @@ class Scan:
     # all the strings currently in _get_collection_manager_names and
     # _get_scored_strings.
     config = Config()
-    collection_tag_regex = config.get_string('scan_search_keys', 'collection_tag_regex')
 
     def __init__(self, doi_object=None, doi_string=None):
+        self.collection_tag_regex = self._get_collection_tag_regex()
         self.text_directory = self.config.get_string('scan', 'scan_text_directory')
         if not os.path.exists(self.text_directory):
             os.mkdir(self.text_directory)
@@ -123,12 +123,40 @@ class Scan:
             self.textfile_path = doi_textfile
         return True
 
-    # This should be in config.ini, and it should be in a "names" section that expands
-    # each name into each of the three forms
+    @classmethod
+    def _get_collection_tag_regex(cls):
+        institution_root_name = eval(cls.config.get_string('scan_search_keys', 'institution_root_name'))
+        collections_with_id_strings = cls.config.get_list('scan_search_keys', 'collections_with_id_strings')
+        collection_tag_regex = f"(([ \(\[])+|^)(?i){institution_root_name}"
+        for id in collections_with_id_strings:
+            collection_tag_regex += f"({id})*"
+        collection_tag_regex += "[: ]+[ ]*[0-9\-]+"
+        return collection_tag_regex
+
     @classmethod
     def _get_collection_manager_names(cls):
         collection_manager_names = cls.config.get_list('scan_search_keys', 'collection_manager_names')
-        return collection_manager_names
+        all_name_variations = []
+        for test_string, score in collection_manager_names:
+            test_string = test_string.lower()
+            # Case 1: last name only like 'shevock'
+            if len(test_string.split()) == 1:
+                all_name_variations.append((test_string, score))
+                continue
+            firstname, lastname = test_string.split()
+            first_letter = firstname[0]
+            # Case 2: parsing initial names like 'D.H. Kavanaugh'
+            if firstname.count('.') > 1:
+                all_name_variations.append((f"{firstname} {lastname}", score))
+                all_name_variations.append((f"{firstname}{lastname}", score))
+                all_name_variations.append((f"{firstname[:-1]} {lastname}", score))
+                continue
+            # Case 3: parsing full names; not Case 4: initial name like 'd catania' or 'd. catania'
+            elif len(firstname) != 1 and len(firstname.replace('.', '')) != 1:
+                all_name_variations.append((f"{firstname} {lastname}", score))
+            all_name_variations.append((f"{first_letter}. {lastname}", score))
+            all_name_variations.append((f"{first_letter} {lastname}", score))
+        return all_name_variations
 
     @classmethod
     def _get_scored_strings(cls):
@@ -140,7 +168,8 @@ class Scan:
     @classmethod
     def get_regex_score_tuples(cls):
         retval = []
-        retval.append((cls.collection_tag_regex, 300))
+        collection_tag_regex = cls._get_collection_tag_regex()
+        retval.append((collection_tag_regex, 300))
         retval = retval + cls.config.get_list('scan_search_keys', 'additional_regex')
         for regex_tuple in Scan._get_scored_strings() + Scan._get_collection_manager_names():
             regex = regex_tuple[0].lower()
