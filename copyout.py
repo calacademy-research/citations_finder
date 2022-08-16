@@ -83,7 +83,7 @@ class CopyOut(Utils):
     def dump_file_tsv(self, path="./"):
         if not os.path.exists(path):
             os.makedirs(path)
-        db = DoiDatabase(start_year=self.year)
+        db = DoiDatabase()
         filename = f"{path}/matched_{self.year}.tsv"
         fh = open(filename, "w")
         fh.write("doi\tcollection\tjournal_title\ttitle\tpublished_date\tdate_added\tnotes\tdigital_only\n")
