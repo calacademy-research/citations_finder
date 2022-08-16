@@ -170,7 +170,6 @@ class Scan:
         retval = []
         collection_tag_regex = cls._get_collection_tag_regex()
         retval.append((collection_tag_regex, 300))
-        retval = retval + cls.config.get_list('scan_search_keys', 'additional_regex')
         for regex_tuple in Scan._get_scored_strings() + Scan._get_collection_manager_names():
             regex = regex_tuple[0].lower()
             retval.append((regex, regex_tuple[1]))
@@ -195,10 +194,6 @@ class Scan:
             else:
                 # print(f"Hyphens bad: {result}")
                 self.score -= 20
-
-        regex_list = self.config.get_list('scan_search_keys', 'additional_regex')
-        for regex, score in regex_list:
-            self._scan_with_regex(regex, score, ok_after_references=False)
 
         collection_manager_names = Scan._get_collection_manager_names()
 
