@@ -56,36 +56,27 @@ class Match(Utils):
             print(f"digital_only: {self.digital_only}")
 
     def print_matched_lines(self):
-        sql = f"select line,score from found_scan_lines where doi = '{self.doi}'"
+        sql = f"select doi,line,score, matched_string from found_scan_lines where doi = '{self.doi}'"
         lines = DBConnection.execute_query(sql)
-        regex_tuples = Scan.get_regex_score_tuples()
         for line in lines:
-            matched_line = line[0]
-            matches = []
-            for regex_tuple in regex_tuples:
-                result = re.search(regex_tuple[0], matched_line)
-                if result is not None:
-                    matches.append((result.group(0), regex_tuple[1]))
+            matched_line = line[1]
+            color = Fore.BLUE
+            score = line[2]
+            matched = line[3]
+            if score < 0:
+                color = Fore.MAGENTA
+            if score > 200:
+                color = Fore.YELLOW
+            if score > 300:
+                color = Fore.RED
 
-            matches.sort(key=lambda x: x[1], reverse=True)
-            if len(matches) > 0:
-                color = Fore.BLUE
-                score = matches[0][1]
-                matched = matches[0][0]
-                if score < 0:
-                    color = Fore.MAGENTA
-                if score > 200:
-                    color = Fore.YELLOW
-                if score > 300:
-                    color = Fore.RED
+            matched_line = matched_line.replace(matched, f'{color}{matched}{Fore.RESET}')
+            # print(f"    {regex_tuple[0]}\t{matched_line}")
 
-                matched_line = matched_line.replace(matched, f'{color}{matched}{Fore.RESET}')
-                # print(f"    {regex_tuple[0]}\t{matched_line}")
+            # matched_line = matched_line.replace('california',f'{Fore.MAGENTA}california{Fore.RESET}')
+            # matched_line = matched_line.replace('cas',f'{Fore.RED}cas{Fore.RESET}')
 
-                # matched_line = matched_line.replace('california',f'{Fore.MAGENTA}california{Fore.RESET}')
-                # matched_line = matched_line.replace('cas',f'{Fore.RED}cas{Fore.RESET}')
-
-                print(f"{score}: {matched_line}")
+            print(f"{score}: {matched_line}")
 
     def open(self):
         command = "/usr/bin/open"
