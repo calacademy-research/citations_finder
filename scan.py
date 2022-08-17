@@ -143,19 +143,28 @@ class Scan:
             if len(test_string.split()) == 1:
                 all_name_variations.append((test_string, score))
                 continue
-            firstname, lastname = test_string.split()
+            # Case 2: parsing full names with first, last, and middle 
+            if len(test_string.split()) == 3:
+                firstname, middlename, lastname = test_string.split()
+                all_name_variations.append((f"{firstname} {middlename} {lastname}", score))
+            else:
+                firstname, lastname = test_string.split()
             first_letter = firstname[0]
-            # Case 2: parsing initial names like 'D.H. Kavanaugh'
+            # Case 3: parsing initial names like 'D.H. Kavanaugh'
             if firstname.count('.') > 1:
                 all_name_variations.append((f"{firstname} {lastname}", score))
                 all_name_variations.append((f"{firstname}{lastname}", score))
                 all_name_variations.append((f"{firstname[:-1]} {lastname}", score))
                 continue
-            # Case 3: parsing full names; not Case 4: initial name like 'd catania' or 'd. catania'
+            # Case 4: parsing full names with first and last
             elif len(firstname) != 1 and len(firstname.replace('.', '')) != 1:
                 all_name_variations.append((f"{firstname} {lastname}", score))
-            all_name_variations.append((f"{first_letter}. {lastname}", score))
-            all_name_variations.append((f"{first_letter} {lastname}", score))
+                all_name_variations.append((f"{first_letter}. {lastname}", 200))
+                all_name_variations.append((f"{first_letter} {lastname}", 200))
+            # Case 5: initial name like 'd catania' or 'd. catania'
+            else:
+                all_name_variations.append((f"{first_letter}. {lastname}", score))
+                all_name_variations.append((f"{first_letter} {lastname}", score))
         return all_name_variations
 
     @classmethod
