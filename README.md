@@ -133,12 +133,13 @@ Currently only tested on mac. create a virtual environment using the requirement
 
 # TODOS
 
+* Get DOI metadata from datacite: https://support.datacite.org/docs/api-queries
+
+* Integrate journal search/gbif results (chery's journal downloader) into the main code body to pull more 
+  issns
+
 * PDF directory is flat; should with one directory per issn, at least, and possibly per year. Write
   converter for existing downloads and then update the Utils.get_filename_from_doi_string function.
-
-* fix and test crossref downloader (may be subsumed in unpaywall.org?)
-
-* Generalize to work on windows - use os.path.join instead of slashes
 
 * scan for collection ids should be "Scan for specimen IDs"
 
@@ -146,18 +147,7 @@ Currently only tested on mac. create a virtual environment using the requirement
   to auto rotate the origin IP to see if this gets around the ddos wall. [no known vpn api works on mac, 
   more research required]
 
-* put custom phrases to scan for (and scoring) into config.ini
-
 * archive.org downloader (may be subsumed in unpaywall.org)
-
-* in scan: Check for duplicate paper titles
-
-* in scan: chop everything after "references"
-
-* In scan: check for wraparound case - if "CAS" is on the first line and digit is on the second. (This
-  may be already done; verify)
-
-* In scan: make each paragraph a line (may be already done? verify)
 
 * unpaywall_downloader:  "download_link" doesn't work very well. Most of the time this links to an
   html version of the paper. Currently only handles direct-to-PDF links. However, it's hard to tell the
@@ -167,11 +157,10 @@ Currently only tested on mac. create a virtual environment using the requirement
   use said button's URL to download the true PDF.
 
 
-* Use proper logging and log levels - everything is prints now.
+* Use proper logging and log levels - everything is prints now. https://docs.python.org/3/library/logging.html
 
-* Get specimen count compare to pubs on a per instutiuion ratio
+* Get specimen count compare to pubs on a per institution ratio
 
-* Get DOI metadata from datacite: https://support.datacite.org/docs/api-queries
 
 * note known failure case - we don't always OCR 90 degree rotated tables
 
@@ -228,5 +217,8 @@ l API here. Pull all referenced DOIs?
     if the results come in date order it would be possbile to download specific years instead of oldest
     to now. It is likely that this is so, someone should confirm with RTFM
  
+* fix and test crossref downloader (may be subsumed in unpaywall.org?)
+
+* Generalize to work on windows - use os.path.join instead of slashes using (os.path.sep) and os.path.join.
 
 

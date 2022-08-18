@@ -280,10 +280,6 @@ class Scan:
                             cur_line = cur_line + f"{next_words[id]}"
                             hyphen = False
 
-                    # print(cur_line)
-
-                    # print(f"Searching line: {cur_line}")
-
                     result = re.search(regex, cur_line)
                     if result is not None:
                         # print(".", end='')
