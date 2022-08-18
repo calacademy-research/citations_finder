@@ -138,6 +138,9 @@ Currently only tested on mac. create a virtual environment using the requirement
 * Integrate journal search/gbif results (chery's journal downloader) into the main code body to pull more 
   issns
 
+* Use proper logging and log levels - everything is prints now. https://docs.python.org/3/library/logging.html
+
+
 * PDF directory is flat; should with one directory per issn, at least, and possibly per year. Write
   converter for existing downloads and then update the Utils.get_filename_from_doi_string function.
 
@@ -157,7 +160,6 @@ Currently only tested on mac. create a virtual environment using the requirement
   use said button's URL to download the true PDF.
 
 
-* Use proper logging and log levels - everything is prints now. https://docs.python.org/3/library/logging.html
 
 * Get specimen count compare to pubs on a per institution ratio
 
