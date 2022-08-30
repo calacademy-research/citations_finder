@@ -10,7 +10,8 @@ from config import Config
 from downloaders import Downloaders
 from copyout import CopyOut
 from crossref_journal_entry import CrossrefJournalEntry
-
+import journal_finder
+from db_connection import DBConnection
 
 def download_single_doi(doi, config):
     print("Single DOI download mode")
@@ -54,6 +55,12 @@ def setup_tables():
 def setup():
     config = Config()
     setup_tables()
+
+    if config.get_boolean('journal population', 'populate_journals'):
+        gbif_url_list = config.get_list('journal population', 'gbif_api_collection_links')
+        for url in gbif_url_list:
+            print(f"Processing journals for population from link: {url}")
+            journal_finder.addJournals('journals.tsv', url)
 
     if config.get_boolean('general', 'download_single_doi_mode'):
         download_single_doi(config.get_string('general', 'download_single_doi'), config)
