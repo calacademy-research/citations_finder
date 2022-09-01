@@ -108,10 +108,10 @@ def setup():
         scan_db = ScanDatabase(db, reset_scan_database=reset_scan_database)
         scan_db.scan_pdfs(scan_start_year, scan_end_year, rescore=rescore)
 
-        if config.get_boolean('scan_for_colleciton_ids', 'enabled'):
+        if config.get_boolean('scan_for_specimen_ids', 'enabled'):
             reset_scan_database = config.get_boolean('scan', 'reset_scan_database')
 
-            scan_db.scan_for_collection_ids(reset_tables=reset_scan_database)
+            scan_db.scan_for_specimen_ids(reset_tables=reset_scan_database)
 
     validate_enabled = config.get_boolean('validate', 'enabled')
 

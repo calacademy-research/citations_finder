@@ -82,12 +82,12 @@ class ScanDatabase(Utils):
             self.do_scan(doi_entry)
 
 
-    def scan_for_collection_ids(self, reset_tables=False):
+    def scan_for_specimen_ids(self, reset_tables=False):
         if reset_tables:
-            sql = "drop table matched_collection_ids"
+            sql = "drop table matched_specimen_ids"
             DBConnection.execute_query(sql)
 
-        sql_create_database_table = """ CREATE TABLE IF NOT EXISTS matched_collection_ids (
+        sql_create_database_table = """ CREATE TABLE IF NOT EXISTS matched_specimen_ids (
                                             doi text,
                                             identifier text
                                         ); """
@@ -97,11 +97,11 @@ class ScanDatabase(Utils):
         for doi in matched_dois:
             doi = doi[0]
             scan = Scan(doi_string=doi)
-            results = scan.scan_collection_ids()
+            results = scan.scan_specimen_ids()
             if results:
                 # print(f"Title: {scan.title}")
                 for result in results:
-                    sql_insert = f"""insert into matched_collection_ids (doi, identifier) VALUES (?,?)"""
+                    sql_insert = f"""insert into matched_specimen_ids (doi, identifier) VALUES (?,?)"""
                     result = result.strip()
                     if result.startswith("("):
                         result = result[1:]

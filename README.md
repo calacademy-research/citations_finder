@@ -79,11 +79,11 @@ requested papers from, say, 2014 and ONLY 2014, the system will assume that pape
    belong in config.ini) to generate scores for the papers that have been downloaded.
 
 
-4. **scan_for_collection_ids**
+4. **scan_for_specimen_ids**
 
    An attempt to harvest the actual specimen ids. Doesn't work very well (formats in papers are
    nonstandard, and often in appendices that aren't necessarily attached to the public PDF). Results
-   stored in matched_collection_ids in the database, linking specimen ID to DOI. Added to copyout report.
+   stored in matched_specimen_ids in the database, linking specimen ID to DOI. Added to copyout report.
 
 5. **validate**
 
@@ -202,9 +202,6 @@ l API here. Pull all referenced DOIs?
  or perhaps place them directly into the jouirnals db record.
 
 * Bug: Scan is picking up "j, fong" (example) when it should be scanning only for "j. fong"
-
-* Bug: If we have two phrases with overlapping start words, only the short one is triggered. 
-  e.g.: "chinese academy of sciences" and "chinese" - the latter masks the former.
 
 * Todo: Add "cas number" to exclusion when above bug is fixed
 

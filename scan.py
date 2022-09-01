@@ -229,7 +229,7 @@ class Scan:
             # if regex_result_count > 0:
             #     print(f"Found: {test_string} Score: {self.score}")
 
-    def scan_collection_ids(self):
+    def scan_specimen_ids(self):
         if self.score is None:
             self.score = 0
         regex = self.collection_tag_regex
