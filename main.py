@@ -11,7 +11,7 @@ from downloaders import Downloaders
 from copyout import CopyOut
 from crossref_journal_entry import CrossrefJournalEntry
 import journal_finder
-from db_connection import DBConnection
+import logging
 
 def download_single_doi(doi, config):
     print("Single DOI download mode")
@@ -185,4 +185,7 @@ def test_known_good(db):
 
 
 if __name__ == '__main__':
+    config = Config()
+    logging_level = config.get_string('general', 'logging_level')
+    logging.basicConfig(level=eval(f"logging.{logging_level}"), format='%(message)s')
     setup()

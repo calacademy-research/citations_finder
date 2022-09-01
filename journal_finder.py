@@ -1,6 +1,7 @@
 import requests
 from collections import defaultdict
 import csv
+import logging
 
 def _getGBIFResults(gbif_url):
     response = requests.get(gbif_url, allow_redirects=True)
@@ -67,7 +68,7 @@ def addJournals(file_name, url):
     for item in results:
         total += 1
         if (total % 10 == 0):
-            print(f"...Done {total} out of {len(results)}")
+            logging.info(f"...Done {total} out of {len(results)}")
         try:
             doi = item['identifiers']['doi']
             journal_dict = _getCrossrefResults(doi, journal_dict)
@@ -79,7 +80,7 @@ def addJournals(file_name, url):
             for issn, issn_type in issn_dict.items():
                 if issn not in existing_journals:
                     file.write(f"{issn}\t{journal}\t{issn_type}\n")
-    print(f"...Done {total} out of {total}")
+    logging.info(f"...Done {total} out of {total}")
 
 
 def printJournalList(url):
@@ -93,7 +94,7 @@ def printJournalList(url):
     for item in results:
         total += 1
         if (total % 10 == 0):
-            print(f"Done {total} out of {len(results)}")
+            logging.info(f"Done {total} out of {len(results)}")
         try:
             doi = item['identifiers']['doi']
             journal_dict = _getCrossrefResults(doi, journal_dict)
@@ -102,7 +103,7 @@ def printJournalList(url):
 
     for journal, issn_dict in sorted(journal_dict.items()):
         for issn, issn_type in issn_dict.items():
-            print(f"{issn}\t{journal}\t{issn_type}")
+            logging.info(f"{issn}\t{journal}\t{issn_type}")
             issn_count += 1
 
     print(f"\nTotal Number of Results: {total} | Unique Journals Found: {len(journal_dict)} | Not Found: {len(errors)} | Unique ISSN's Found: {issn_count} | Duplicates: {total - len(journal_dict) - len(errors)}")
