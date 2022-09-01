@@ -133,10 +133,6 @@ Currently only tested on mac. create a virtual environment using the requirement
 
 # TODOS
 
-* Get DOI metadata from datacite: https://support.datacite.org/docs/api-queries
-
-* Integrate journal search/gbif results (chery's journal downloader) into the main code body to pull more 
-  issns
 
 * Use proper logging and log levels - everything is prints now. https://docs.python.org/3/library/logging.html
 
