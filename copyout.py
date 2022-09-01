@@ -2,9 +2,8 @@ from db_connection import DBConnection
 import os
 from shutil import copyfile
 from utils_mixin import Utils
-
 from doi_database import DoiDatabase
-
+import logging
 
 class CopyOut(Utils):
     def __init__(self, year):
@@ -41,7 +40,7 @@ class CopyOut(Utils):
         target_dir = self.make_target_dir(dest_dir, collection)
         target = target_dir + f"/{os.path.basename(origin_path)}"
         if not os.path.exists(target):
-            print(f"New paper: {target}")
+            logging.info(f"New paper: {target}")
             copyfile(origin_path, target)
 
     def copy_out_files(self, dest_dir="./"):

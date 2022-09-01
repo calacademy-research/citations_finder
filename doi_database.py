@@ -18,7 +18,7 @@ from scan_database import ScanDatabase
 from validator import Validator
 
 from datetime import date
-
+import logging
 
 class RetriesExceededException(Exception):
     pass
@@ -66,21 +66,21 @@ class DoiDatabase(Utils):
                         continue
                     issn = line[0]
                     if issn.startswith("not in crossref"):
-                        print("Not in crossref, continuing.")
+                        logging.warning("Not in crossref, continuing.")
                         continue
                     journal = line[1]
                     type = None
                     if len(line) > 2:
                         type = line[2]
                 except Exception as e:
-                    print(f"Parsing error: {line}, skipping.")
+                    logging.warning(f"Parsing error: {line}, skipping.")
                     continue
 
-                print(f"Downloading {journal} issn: {issn} starting year: {start_year} ending year {end_year}", end='')
+                logging.info(f"Downloading {journal} issn: {issn} starting year: {start_year} ending year {end_year}", end='')
                 if type is None:
-                    print("")
+                    logging.info("")
                 else:
-                    print(f" Type: {type}")
+                    logging.info(f" Type: {type}")
 
                 if self._check_journal_record(issn, start_year):
                     self.download_issn(issn, start_year, end_year)
@@ -118,7 +118,7 @@ class DoiDatabase(Utils):
         previous_start_year = self._get_issn_oldest_year(issn)
         if previous_start_year is None or previous_start_year > start_year:
             name = name.replace("'", "''")
-            print(f"{issn}\t{name}\t{type}")
+            logging.info(f"{issn}\t{name}\t{type}")
             sql = f"INSERT OR REPLACE INTO journals (issn,name, type,start_year,end_year) VALUES ('{issn}','{name}','{type}',{start_year},{date.today().year})"
             results = DBConnection.execute_query(sql)
 
@@ -140,7 +140,7 @@ class DoiDatabase(Utils):
             doi_string = self.get_doi_from_path(pdf_file)
             base_url = f"https://api.crossref.org/works/{doi_string}"
 
-            print(f"Querying crossref.org for metadata to build db: {base_url}")
+            logging.info(f"Querying crossref.org for metadata to build db: {base_url}")
             results = self._get_url_(base_url)
             item = results['message']
             if raise_exception_if_exist:
@@ -149,10 +149,10 @@ class DoiDatabase(Utils):
                 try:
                     DoiEntry('import_pdfs', item)
                 except EntryExistsException as e:
-                    print(f"DOI already in database, skipping: {e}")
+                    logging.info(f"DOI already in database, skipping: {e}")
             total_count += 1
             if total_count % 10 == 0:
-                print(f"Done {total_count} out of {len(pdf_files)}")
+                logging.info(f"Done {total_count} out of {len(pdf_files)}")
 
     def download_dois_by_journal_size(self,
                                     start_year,
@@ -168,10 +168,10 @@ class DoiDatabase(Utils):
         for journal, issn, doi_count in journals:
             # journal = journal[0]
             # issn = journal[1]
-            print(f"Attempting downloads for journal: {journal}:{issn}")
+            logging.info(f"Attempting downloads for journal: {journal}:{issn}")
             report = DatabaseReport(start_year, end_year, journal)
-            print("\n")
-            print(report.report(journal=journal, issn=issn, summary=False))
+            logging.info("\n")
+            logging.info(report.report(journal=journal, issn=issn, summary=False))
             self.download_dois(start_year, end_year, journal=journal, issn=issn)
 
     def _generate_select_sql(self, start_year, end_year, journal_issn, downloaded="FALSE"):
@@ -215,8 +215,8 @@ class DoiDatabase(Utils):
 
         doif = DoiFactory(select_dois)
         dois = doif.dois
-        print(f"SQL: {select_dois}")
-        print(f"  Pending download count: {len(dois)}")
+        logging.info(f"SQL: {select_dois}")
+        logging.info(f"  Pending download count: {len(dois)}")
         download_list = []
         for doi_entry in dois:
             if journal is None or doi_entry.issn == issn:
@@ -233,24 +233,24 @@ class DoiDatabase(Utils):
         done = False
         total_items_processed = 0
         total_results = 0
-        print(f"Processing issn:{issn}")
+        logging.info(f"Processing issn:{issn}")
         while not done:
             try:
                 cursor, total_results, items_processed = self._download_chunk(base_url, cursor, start_year)
                 total_items_processed += items_processed
-                print("Continuing...")
+                logging.info("Continuing...")
             except ConnectionError:
                 if total_items_processed >= total_results:
                     done = True
-                    print("Done.")
+                    logging.info("Done.")
                 else:
-                    print("retrying....")
+                    logging.info("retrying....")
             except RetriesExceededException as rex:
-                print(f"Retries exceeded: {rex}, aborting.")
+                logging.info(f"Retries exceeded: {rex}, aborting.")
                 return
 
     def _handle_connection_error(self, retries, max_retries, url, cursor, start_year, e):
-        print(f"Connection error: {e}, retries: {retries}. Sleeping 60 and retrying.")
+        logging.info(f"Connection error: {e}, retries: {retries}. Sleeping 60 and retrying.")
         time.sleep(60)
         if retries >= max_retries:
             raise RetriesExceededException(f"Retried {retries} times, aborting.")
@@ -268,14 +268,14 @@ class DoiDatabase(Utils):
             retries += 1
             return self._handle_connection_error(retries, max_retries, url, cursor, start_year, e)
 
-        print(f"Querying: {url + safe_cursor}")
+        logging.info(f"Querying: {url + safe_cursor}")
         message = results['message']
         items = message['items']
         total_results = message['total-results']
         items_processed = 0
         for item in items:
             items_processed += 1
-            # print(f"Processing DOI: {item['DOI']}")
+            # logging.info(f"Processing DOI: {item['DOI']}")
             type = item['type']
             if type == 'journal':
                 CrossrefJournalEntry(item)
@@ -283,16 +283,16 @@ class DoiDatabase(Utils):
                 try:
                     DoiEntry('download_chunk', item)
                 except EntryExistsException as e:
-                    # print(f"DOI already in database, skipping: {e}")
-                    print(".", end='')
+                    # logging.warning(f"DOI already in database, skipping: {e}")
+                    logging.info(".", end='')
             else:
                 # "journal-issue"
-                # print(f"got type: {type}")
+                # logging.info(f"got type: {type}")
                 pass
 
         if len(items) == 0:
-            print("No items left.")
+            logging.error("No items left.")
             raise ConnectionError()
         else:
-            print(f"Processed {len(items)} items")
+            logging.info(f"Processed {len(items)} items")
         return message['next-cursor'], total_results, items_processed

@@ -53,7 +53,7 @@ def _getExistingJournals(file_name):
                 if issn not in existing_journals:
                     existing_journals[issn] = None
             except Exception as e:
-                print(f"Parsing error: {line}, skipping.")
+                logging.warning(f"Parsing error: {line}, skipping.")
                 continue
     return existing_journals
 
@@ -106,9 +106,9 @@ def printJournalList(url):
             logging.info(f"{issn}\t{journal}\t{issn_type}")
             issn_count += 1
 
-    print(f"\nTotal Number of Results: {total} | Unique Journals Found: {len(journal_dict)} | Not Found: {len(errors)} | Unique ISSN's Found: {issn_count} | Duplicates: {total - len(journal_dict) - len(errors)}")
+    logging.info(f"\nTotal Number of Results: {total} | Unique Journals Found: {len(journal_dict)} | Not Found: {len(errors)} | Unique ISSN's Found: {issn_count} | Duplicates: {total - len(journal_dict) - len(errors)}")
     for e in errors:
-        print(e)
+        logging.info(e)
 
 
 if __name__ == '__main__':

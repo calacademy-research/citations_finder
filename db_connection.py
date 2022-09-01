@@ -1,5 +1,5 @@
 import sqlite3
-
+import logging
 
 class DBConnector(object):
 
@@ -34,7 +34,7 @@ class DBConnection(object):
         try:
             cursor = connection.cursor()
         except Exception as e:
-            print(f"Connection error; recreating connection.")
+            logging.error(f"Connection error; recreating connection.")
             connection = cls.get_connection(new=True)  # Create new connection
             cursor = connection.cursor()
         try:
@@ -44,7 +44,7 @@ class DBConnection(object):
                 cursor.execute(query, args)
             connection.commit()
         except Exception as e:
-            print(f"Bad SQL: {e}:\n{query}")
+            logging.critical(f"Bad SQL: {e}:\n{query}")
             raise e
         result = cursor.fetchall()
         cursor.close()

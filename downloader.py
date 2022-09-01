@@ -18,7 +18,7 @@ import functools
 import shutil
 from selenium.common.exceptions import WebDriverException
 import pyautogui
-
+import logging
 
 class Downloader(ABC, Utils):
     __metaclass__ = ABCMeta
@@ -30,7 +30,7 @@ class Downloader(ABC, Utils):
 
         self.PDF_DIRECTORY = self.config.get_string("downloaders", "pdf_directory")
         if not os.path.exists(self.PDF_DIRECTORY):
-            print(f"PDF directory missing; creating now: {self.PDF_DIRECTORY}")
+            logging.warning(f"PDF directory missing; creating now: {self.PDF_DIRECTORY}")
             os.mkdir(self.PDF_DIRECTORY)
         header_email = self.config.get_string("downloaders", "header_email")
         self.headers = {
@@ -51,18 +51,24 @@ class Downloader(ABC, Utils):
             'User-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
         r = requests.get(url, headers=headers, allow_redirects=True, timeout=120, verify=False)
         if 'html' not in r.headers['Content-Type']:
+<<<<<<< HEAD
             print(f"not html, downloading: {r.headers['Content-Type']} {url}")
             new_directory = os.path.join(path, doi_entry.issn, str(doi_entry.date.year))
             if not os.path.exists(new_directory):
                 print(f"Creating new PDF directory: {new_directory}")
                 os.makedirs(new_directory)
             filename = os.path.join(new_directory, Utils.get_filename_from_doi_string(doi_entry.doi))
+=======
+            logging.warning(f"not html, downloading: {r.headers['Content-Type']} {url}")
+
+            filename = os.path.join(path, Utils.get_filename_from_doi_string(doi_entry.doi))
+>>>>>>> 65ed81d (logging added)
             with open(filename, "wb") as f:
-                print(f"Downloaded {doi_entry.doi} to {filename}.")
+                logging.info(f"Downloaded {doi_entry.doi} to {filename}.")
                 f.write(r.content)
             return (True, r.status_code)
         else:
-            print(f"Not a PDF, can't download. Code: {r.status_code}: {r.headers['Content-Type']} {url}")
+            logging.error(f"Not a PDF, can't download. Code: {r.status_code}: {r.headers['Content-Type']} {url}")
             return (False, r.status_code)
 
     @abstractmethod
@@ -109,7 +115,7 @@ class Downloader(ABC, Utils):
                 os.remove(path)
 
     def _firefox_downloader(self, url, doi_entry):
-        print(f"Attempting download using firefox/selenium: {url}")
+        logging.info(f"Attempting download using firefox/selenium: {url}")
 
         # Doesn't work. Too bad.
         # directory = './webdriver'
@@ -130,10 +136,10 @@ class Downloader(ABC, Utils):
                 EC.presence_of_element_located((By.CLASS_NAME, "pdfViewer"))
             )
         except TimeoutException:
-            print("Timeout, never found a pdfviewer")
+            logging.error("Timeout, never found a pdfviewer")
             pass
         except WebDriverException:
-            print("webdriver failed, continuing")
+            logging.error("webdriver failed, continuing")
             pass
         try:
             pyautogui.keyDown('command')
@@ -150,7 +156,7 @@ class Downloader(ABC, Utils):
 
             self._close_firefox(driver)
         except Exception as e:
-            print(f"exception in selenium/pyautogui: {e}, continuing...")
+            logging.warning(f"exception in selenium/pyautogui: {e}, continuing...")
 
         # driver.close()
 
@@ -160,15 +166,15 @@ class Downloader(ABC, Utils):
         try:
             latest_file = max(list_of_files, key=os.path.getctime)
         except ValueError:
-            print("No files saved, marking as failed.")
+            logging.error("No files saved, marking as failed.")
             return False
         if not latest_file.lower().endswith(".pdf"):
-            print("No PDF file found, returning failure. ")
+            logging.error("No PDF file found, returning failure. ")
             self.cleandir(firefox_download_folder)
             return False
 
         destination = f"{self.PDF_DIRECTORY}/{Utils.get_filename_from_doi_string(doi_entry.doi)}"
         os.rename(f"{latest_file}", destination)
 
-        print(f"Downloaded {destination}")
+        logging.info(f"Downloaded {destination}")
         return True

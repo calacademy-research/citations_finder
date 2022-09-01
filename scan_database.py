@@ -2,7 +2,7 @@ from db_connection import DBConnection
 from scan import Scan
 from utils_mixin import Utils
 from doi_database import DoiFactory
-
+import logging
 
 class ScanDatabase(Utils):
 
@@ -99,7 +99,7 @@ class ScanDatabase(Utils):
             scan = Scan(doi_string=doi)
             results = scan.scan_specimen_ids()
             if results:
-                # print(f"Title: {scan.title}")
+                # logging.info(f"Title: {scan.title}")
                 for result in results:
                     sql_insert = f"""insert into matched_specimen_ids (doi, identifier) VALUES (?,?)"""
                     result = result.strip()
@@ -109,8 +109,8 @@ class ScanDatabase(Utils):
                             result]
                     DBConnection.execute_query(sql_insert, args)
                     # if '-' in result:
-                    #     print(f"doi: {doi} title: {scan.title}")
-                    #     print(f" Got bad: {result}")
+                    #     logging.debug(f"doi: {doi} title: {scan.title}")
+                    #     logging.debug(f" Got bad: {result}")
 
 
 

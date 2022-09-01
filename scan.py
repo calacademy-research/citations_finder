@@ -5,7 +5,7 @@ from config import Config
 
 from db_connection import DBConnection
 from doi_entry import DoiFactory
-
+import logging
 
 class Scan:
     # TODO: this only encompasses a few of the tags we end up scanning for
@@ -20,7 +20,7 @@ class Scan:
         self.text_directory = self.config.get_string('scan', 'scan_text_directory')
         if not os.path.exists(self.text_directory):
             os.mkdir(self.text_directory)
-            print(f"Created directory to store interpolated text files: {self.text_directory}")
+            logging.info(f"Created directory to store interpolated text files: {self.text_directory}")
         if doi_object is None and doi_string is None:
             raise NotImplementedError("Provide an object or a string")
         if doi_string is not None and doi_object is None:
@@ -35,7 +35,7 @@ class Scan:
         sql = f"""select * from scans where doi = '{doi_string}'"""
         scan_db_results = DBConnection.execute_query(sql)
         if len(scan_db_results) == 1:
-            # print(f"{scan_db_results}")
+            # logging.debug(f"{scan_db_results}")
             self.doi_string = scan_db_results[0][0]
             self.textfile_path = scan_db_results[0][1]
             self.score = scan_db_results[0][2]
@@ -113,10 +113,10 @@ class Scan:
         if self.broken_converter:
             return False
         if not os.path.exists(doi_textfile) or force is True:
-            print(f"missing txt file, generating {doi_textfile}")
+            logging.warning(f"missing txt file, generating {doi_textfile}")
             self._run_converter()
             if not os.path.exists(doi_textfile):
-                print("PDF conversion failure; marking as failed and continuing.")
+                logging.error("PDF conversion failure; marking as failed and continuing.")
                 self.broken_converter = True
                 return False
         if os.path.exists(doi_textfile):
@@ -186,9 +186,9 @@ class Scan:
         return retval
 
     def scan(self, clear_existing_records=False):
-        # print(f"Scanning: {self.textfile_path}")
+        # logging.debug(f"Scanning: {self.textfile_path}")
         if self._convert_pdf() is False:
-            # print(f"Missing PDF, not scanning: {self.textfile_path}")
+            # logging.warning(f"Missing PDF, not scanning: {self.textfile_path}")
             self._write_to_db()
             return False
         if clear_existing_records or self.score is None:
@@ -198,10 +198,10 @@ class Scan:
         for result in results:
             hyphen_count = result.count('-')
             if hyphen_count < 2:
-                # print(f"Hyphens ok: {result}")
+                # logging.debug(f"Hyphens ok: {result}")
                 self.score += 300
             else:
-                # print(f"Hyphens bad: {result}")
+                # logging.debug(f"Hyphens bad: {result}")
                 self.score -= 20
 
         collection_manager_names = Scan._get_collection_manager_names()
@@ -215,7 +215,7 @@ class Scan:
         self._scan_keywords(string_set_post_reference, ok_after_references=True)
 
         if self.score > 0:
-            print(f"{self.score}\t{self.title}")
+            logging.info(f"{self.score}\t{self.title}")
         self._write_to_db(write_scan_lines=True, clear_existing_records=clear_existing_records)
 
         return True
@@ -223,11 +223,11 @@ class Scan:
     def _scan_keywords(self, string_set, ok_after_references=False):
         for test_string, score in string_set:
             test_string = test_string.lower()
-            # print(f"Scanning test string: {test_string}")
+            # logging.info(f"Scanning test string: {test_string}")
             regex = f"(([ \(\[])+|^)(?i){test_string}(([ ,.:])+|$)"
             regex_result_count = self._scan_with_regex(regex, score, ok_after_references)
             # if regex_result_count > 0:
-            #     print(f"Found: {test_string} Score: {self.score}")
+            #     logging.info(f"Found: {test_string} Score: {self.score}")
 
     def scan_specimen_ids(self):
         if self.score is None:
@@ -239,7 +239,7 @@ class Scan:
     def _scan_with_regex(self, regex, score_per_line, ok_after_references, do_score=True):
         results = []
 
-        # print(f"Scanning with regex: {regex}")
+        # logging.debug(f"Scanning with regex: {regex}")
         found_count = 0
         cur_line = None
         with open(self.textfile_path, "r") as a_file:
@@ -253,13 +253,13 @@ class Scan:
                         if (len(next_words) > 0 and len(next_words[0]) <= 1) or \
                                 (len(next_words) > 0 and next_words[0].isdigit() and int(next_words[0]) < 1000):
                             # This is usually a line number or a blank line.
-                            # print(f"Skipping blank: {next_line}")
+                            # logging.debug(f"Skipping blank: {next_line}")
                             continue
                     except ValueError as e:
-                        print(f"Bad line value, not breaking. {e}")
+                        logging.error(f"Bad line value, not breaking. {e}")
 
                 if len(next_words) == 0:
-                    # print(f"totally blank: {next_line}")
+                    # logging.info(f"totally blank: {next_line}")
                     continue
                 if cur_line is not None:
                     cur_line = cur_line.strip()
@@ -282,8 +282,8 @@ class Scan:
 
                     result = re.search(regex, cur_line)
                     if result is not None:
-                        # print(".", end='')
-                        # print(f"{self.textfile_path} possible: {cur_line}")
+                        # logging.debug(".", end='')
+                        # logging.debug(f"{self.textfile_path} possible: {cur_line}")
                         results.append(result.group(0))
                         found_count += 1
                         self.found_lines.append((cur_line, score_per_line, result.group(0)))
@@ -293,7 +293,7 @@ class Scan:
                             "referencias" in next_line or \
                             "ЛИТЕРАТУРА".lower() in next_line or \
                             "literature cited" in next_line:
-                        # print("Stopping scan before references.")
+                        # logging.debug("Stopping scan before references.")
                         break
         old_score = self.score
         assert self.score is not None
@@ -301,7 +301,7 @@ class Scan:
         if do_score:
             self.score = self.score + (score_per_line * found_count)
         # if found_count > 0:
-        #     print(f"Score change. From {old_score} to {self.score}\n")
+        #     logging.debug(f"Score change. From {old_score} to {self.score}\n")
         return results
 
 

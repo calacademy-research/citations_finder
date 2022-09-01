@@ -8,6 +8,7 @@ from ete3 import NCBITaxa
 import enchant
 from scan import Scan
 from datetime import datetime
+import logging
 
 ncbi = NCBITaxa()
 
@@ -71,12 +72,12 @@ class Match(Utils):
                 color = Fore.RED
 
             matched_line = matched_line.replace(matched, f'{color}{matched}{Fore.RESET}')
-            # print(f"    {regex_tuple[0]}\t{matched_line}")
+            # logging.debug(f"    {regex_tuple[0]}\t{matched_line}")
 
             # matched_line = matched_line.replace('california',f'{Fore.MAGENTA}california{Fore.RESET}')
             # matched_line = matched_line.replace('cas',f'{Fore.RED}cas{Fore.RESET}')
 
-            print(f"{score}: {matched_line}")
+            logging.info(f"{score}: {matched_line}")
 
     def open(self):
         command = "/usr/bin/open"
@@ -196,11 +197,11 @@ class Validator(Utils):
         if len(name2taxid) == 0:
             return None
         if verbose:
-            print(f"Word: {word}")
+            logging.info(f"Word: {word}")
         assert len(name2taxid) == 1
         name = list(name2taxid.keys())[0]
         taxid = name2taxid[name][0]
-        # print(f"   taxid: {taxid}")
+        # logging.debug(f"   taxid: {taxid}")
         lineage = ncbi.get_lineage(taxid)
         names_dict = ncbi.get_taxid_translator(lineage)
         lineage_names = [names_dict[taxid] for taxid in lineage]
@@ -251,10 +252,10 @@ class Validator(Utils):
                     if skip is False and name in lineage:
                         if retval is not None:
                             if department != retval:
-                                print(f"Conflict between {retval} and {department}, returning none")
+                                logging.info(f"Conflict between {retval} and {department}, returning none")
                                 return None
                         if verbose:
-                            print(f"Matching {name} to {department} via lineage: {lineage}")
+                            logging.info(f"Matching {name} to {department} via lineage: {lineage}")
                         retval = department
 
         return retval
@@ -273,10 +274,10 @@ class Validator(Utils):
         department = self.categorize_lineage(found_lineages, verbose)
 
         if department is not None:
-            print(f"It's in {Fore.GREEN}{department}{Fore.RESET}")
+            logging.info(f"It's in {Fore.GREEN}{department}{Fore.RESET}")
         if verbose:
             for lineage in found_lineages:
-                print(f"  Lineage:{lineage}")
+                logging.info(f"  Lineage:{lineage}")
 
     def prompt(self, match):
         exit = False

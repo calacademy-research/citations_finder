@@ -5,7 +5,7 @@ import sys
 from datetime import datetime
 import concurrent.futures
 from more_itertools import grouper
-
+import logging
 
 class Downloaders:
 
@@ -47,7 +47,7 @@ class Downloaders:
 
     def download_list_serial(self, doi_list):
         for doi_entry in doi_list:
-            # print(f"journal:{doi_entry.journal_title} not found: {doi_entry.not_found_count} doi: {doi_entry.doi}")
+            # logging.warning(f"journal:{doi_entry.journal_title} not found: {doi_entry.not_found_count} doi: {doi_entry.doi}")
 
             if self.download(doi_entry):
                 doi_entry.mark_successful_download()
@@ -56,11 +56,11 @@ class Downloaders:
         if doi_entry.downloaded:
             return True
         if doi_entry.check_file():
-            print(f"PDF already downloaded; marking {doi_entry.doi} as downloaded ")
+            logging.info(f"PDF already downloaded; marking {doi_entry.doi} as downloaded ")
 
             return True
-        print("==================================================================")
-        print(
+        logging.info("==================================================================")
+        logging.info(
             f"Attempting download: {datetime.now()}:{doi_entry.doi} journal: {doi_entry.get_journal()}")
         for downloader in self.downloaders:
 

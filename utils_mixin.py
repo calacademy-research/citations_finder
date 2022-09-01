@@ -4,7 +4,7 @@ import requests
 import ntpath
 import time
 import re
-
+import logging
 
 class Utils:
     def __init__(self):
@@ -12,13 +12,13 @@ class Utils:
 
     def _get_url_(self, url, headers=None, decode_json=True):
         if self.response_time > 20:
-            print(f"Long wait time ({self.response_time} seconds), backing off 60 seconds on request {url}")
+            logging.info(f"Long wait time ({self.response_time} seconds), backing off 60 seconds on request {url}")
             time.sleep(60)
         elif self.response_time > 10:
-            print(f"Long wait time ({self.response_time} seconds), backing off 30 seconds on request {url}")
+            logging.info(f"Long wait time ({self.response_time} seconds), backing off 30 seconds on request {url}")
             time.sleep(30)
         elif self.response_time > 4:
-            print(f"Long wait time ({self.response_time} seconds), backing off 5 seconds on request {url}")
+            logging.info(f"Long wait time ({self.response_time} seconds), backing off 5 seconds on request {url}")
             time.sleep(5)
 
         start = time.time()
@@ -28,15 +28,15 @@ class Utils:
         else:
             response = requests.get(url, allow_redirects=True, headers=headers)
         self.response_time = time.time() - start
-        print(f"Request took {self.response_time}")
+        logging.info(f"Request took {self.response_time}")
         if response.status_code != 200:
-            # print(f"Fail to get url: {url} ")
+            # logging.error(f"Fail to get url: {url} ")
             raise ConnectionError(url)
         if decode_json:
             try:
                 return response.json()
             except JSONDecodeError as e:
-                print(f"Invalid JSON:\n{response}")
+                logging.error(f"Invalid JSON:\n{response}")
                 raise ConnectionError(f"{e}")
         else:
             return response

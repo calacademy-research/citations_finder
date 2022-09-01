@@ -14,12 +14,12 @@ import journal_finder
 import logging
 
 def download_single_doi(doi, config):
-    print("Single DOI download mode")
+    logging.info("Single DOI download mode")
     select_doi = f"""select * from dois where doi='{doi}'"""
     doif = DoiFactory(select_doi)
     doi_list = doif.dois
     if len(doi_list) == 0:
-        print(f"Single download failed - DOI not in system: {select_doi} ")
+        logging.critical(f"Single download failed - DOI not in system: {select_doi} ")
         sys.exit(1)
     downloaders = Downloaders()
 
@@ -28,7 +28,7 @@ def download_single_doi(doi, config):
 
 
 def retry_failed_unpaywall_links(config):
-    print("Retrying failed unpaywall downloads")
+    logging.info("Retrying failed unpaywall downloads")
     select_dois = f"""select * from dois, unpaywall_downloader where downloaded=False 
      and dois.doi = unpaywall_downloader.doi and unpaywall_downloader.open_url is not null"""
 
@@ -59,7 +59,7 @@ def setup():
     if config.get_boolean('journal population', 'populate_journals'):
         gbif_url_list = config.get_list('journal population', 'gbif_api_collection_links')
         for url in gbif_url_list:
-            print(f"Processing journals for population from link: {url}")
+            logging.info(f"Processing journals for population from link: {url}")
             journal_finder.addJournals('journals.tsv', url)
 
     if config.get_boolean('general', 'download_single_doi_mode'):
@@ -83,7 +83,7 @@ def setup():
         report_start_year = config.get_int('general', 'report_start_year')
         report_end_year = config.get_int('general', 'report_end_year')
         report = DatabaseReport(report_start_year, report_end_year, journal=None)
-        print(report.report())
+        logging.info(report.report())
         if config.get_boolean('general', 'exit_after_report'):
             sys.exit(0)
 
@@ -134,7 +134,7 @@ def setup():
         target_dir = config.get_string('copyout', 'target_dir')
 
         for cur_year in range(copyout_start_year, copyout_end_year + 1):
-            print(f"Exporting year {cur_year}")
+            logging.info(f"Exporting year {cur_year}")
             copyout = CopyOut(cur_year)
             if config.get_boolean('copyout', 'copyout_pdfs'):
                 copyout.copy_out_files(target_dir)
@@ -148,7 +148,7 @@ def setup():
     # validator.copy_matches("2016_found")
 
     # dynamic = scan_db.scan_single_doi('10.11646/zootaxa.4205.2.2')
-    # print(f"Score: {dynamic}")
+    # logging.info(f"Score: {dynamic}")
     # sys.exit(1)
     #
     # test_known_good(db)
@@ -168,14 +168,14 @@ def test_known_good(db):
     test_dois = test_dois + validator.get_matched_paper_dois()
     known_good_scans = []
     for doi in test_dois:
-        print(f"Scnning doi: {doi}")
+        logging.info(f"Scnning doi: {doi}")
         try:
             Scan.clear_db_entry(doi)
             scan = scan_db.scan_single_doi(doi)
-            print(f"Score: {scan.score} doi: {doi} title: {scan.title}")
+            logging.info(f"Score: {scan.score} doi: {doi} title: {scan.title}")
             known_good_scans.append(scan)
         except FileNotFoundError:
-            print("cannot download; skipping.")
+            logging.warning("cannot download; skipping.")
 
     file = open("known_good.tsv", "w")
     for scan in known_good_scans:

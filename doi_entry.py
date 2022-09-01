@@ -5,6 +5,7 @@ import os
 import datetime
 
 from db_connection import DBConnection
+import logging 
 
 PDF_DIRECTORY = "./pdf/"
 
@@ -67,7 +68,7 @@ class DoiEntry(Utils):
         self.issn = doi_details['ISSN'][0]
         self.doi = doi_details['DOI']
         self.details = doi_details
-        # print(f"attempting DOI with New date: {self.get_date()}")
+        # logging.info(f"attempting DOI with New date: {self.get_date()}")
         if self._check_exists():
             raise EntryExistsException(self.doi)
         self.date = self.get_date()
@@ -86,7 +87,7 @@ class DoiEntry(Utils):
     def _check_exists(self):
         query = f"select doi from dois where doi=\"{self.doi}\""
         results = DBConnection.execute_query(query)
-        # print(f"Check exists query: {query}")
+        # logging.info(f"Check exists query: {query}")
         if len(results) >= 1:
             return True
         return False
@@ -122,7 +123,7 @@ class DoiEntry(Utils):
                 self.full_path,
 
                 json.dumps(self.details)]
-        # print(f"SQL: {sql_update}")
+        # logging.info(f"SQL: {sql_update}")
         DBConnection.execute_query(sql_update, args)
 
     def insert_database(self):
@@ -145,7 +146,7 @@ class DoiEntry(Utils):
                 self.downloaded,
                 self.full_path,
                 json.dumps(self.details)]
-        # print(f"SQL insert {sql_insert}")
+        # logging.info(f"SQL insert {sql_insert}")
         DBConnection.execute_query(sql_insert, args)
 
     def get_journal(self):
@@ -164,7 +165,7 @@ class DoiEntry(Utils):
             else:
                 results = datetime.datetime(year=date_parts[0], month=1, day=1)
         except IndexError as e:
-            print(f"Bad date: {id_string}")
+            logging.warning(f"Bad date: {id_string}")
             raise e
         return results
 
