@@ -140,8 +140,6 @@ Currently only tested on mac. create a virtual environment using the requirement
 * PDF directory is flat; should with one directory per issn, at least, and possibly per year. Write
   converter for existing downloads and then update the Utils.get_filename_from_doi_string function.
 
-* scan for collection ids should be "Scan for specimen IDs"
-
 * We're hitting a lot of ddos protections. Detect this condition and Integrate with a VPN (ala nord vpn)
   to auto rotate the origin IP to see if this gets around the ddos wall. [no known vpn api works on mac, 
   more research required]
@@ -187,15 +185,6 @@ Currently only tested on mac. create a virtual environment using the requirement
 * Support adding PDFs from journals that lack DOIs. e.g.: Herpetological Conservation & Biology
 
 * Test that hypehens and colons are parsed correctly in the regular expression search sets
-
-* Examine GBIF literature search: https://www.gbif.org/resource/search?contentType=literature&year=2021,
-  2022&literatureType=journal&gbifDatasetKey=f934f8e2-32ca-46a7-b2f8-b032a4740454 
-
-l API here. Pull all referenced DOIs?
-
-* Use GBIF literature search above to find more potential journals to scan. Possibly in an
- automated way, and pull the ISSNs from the above search to populate journals.tsv if they're missing,
- or perhaps place them directly into the jouirnals db record.
 
 * Bug: Scan is picking up "j, fong" (example) when it should be scanning only for "j. fong"
 
