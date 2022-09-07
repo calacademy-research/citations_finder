@@ -52,8 +52,11 @@ class Downloader(ABC, Utils):
         r = requests.get(url, headers=headers, allow_redirects=True, timeout=120, verify=False)
         if 'html' not in r.headers['Content-Type']:
             print(f"not html, downloading: {r.headers['Content-Type']} {url}")
-
-            filename = os.path.join(path, Utils.get_filename_from_doi_string(doi_entry.doi))
+            new_directory = os.path.join(path, doi_entry.issn, str(doi_entry.date.year))
+            if not os.path.exists(new_directory):
+                print(f"Creating new PDF directory: {new_directory}")
+                os.makedirs(new_directory)
+            filename = os.path.join(new_directory, Utils.get_filename_from_doi_string(doi_entry.doi))
             with open(filename, "wb") as f:
                 print(f"Downloaded {doi_entry.doi} to {filename}.")
                 f.write(r.content)
