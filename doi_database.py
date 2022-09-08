@@ -76,7 +76,7 @@ class DoiDatabase(Utils):
                     logging.warning(f"Parsing error: {line}, skipping.")
                     continue
 
-                logging.info(f"Downloading {journal} issn: {issn} starting year: {start_year} ending year {end_year}", end='')
+                logging.info(f"Downloading {journal} issn: {issn} starting year: {start_year} ending year {end_year}")
                 if type is None:
                     logging.info("")
                 else:
@@ -284,7 +284,7 @@ class DoiDatabase(Utils):
                     DoiEntry('download_chunk', item)
                 except EntryExistsException as e:
                     # logging.warning(f"DOI already in database, skipping: {e}")
-                    logging.info(".", end='')
+                    logging.info(".")
             else:
                 # "journal-issue"
                 # logging.info(f"got type: {type}")
