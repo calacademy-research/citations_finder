@@ -51,18 +51,12 @@ class Downloader(ABC, Utils):
             'User-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
         r = requests.get(url, headers=headers, allow_redirects=True, timeout=120, verify=False)
         if 'html' not in r.headers['Content-Type']:
-<<<<<<< HEAD
-            print(f"not html, downloading: {r.headers['Content-Type']} {url}")
+            logging.warning(f"not html, downloading: {r.headers['Content-Type']} {url}")
             new_directory = os.path.join(path, doi_entry.issn, str(doi_entry.date.year))
             if not os.path.exists(new_directory):
                 print(f"Creating new PDF directory: {new_directory}")
                 os.makedirs(new_directory)
             filename = os.path.join(new_directory, Utils.get_filename_from_doi_string(doi_entry.doi))
-=======
-            logging.warning(f"not html, downloading: {r.headers['Content-Type']} {url}")
-
-            filename = os.path.join(path, Utils.get_filename_from_doi_string(doi_entry.doi))
->>>>>>> 65ed81d (logging added)
             with open(filename, "wb") as f:
                 logging.info(f"Downloaded {doi_entry.doi} to {filename}.")
                 f.write(r.content)
