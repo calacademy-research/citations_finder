@@ -109,9 +109,7 @@ class UnpaywallDownloader(Downloader, Utils):
         do_not_refetch_links = self.config.get_boolean('unpaywall_downloader', 'do_not_refetch_links')
 
         try:
-
-            filename = Utils.get_filename_from_doi_string(doi_entry.doi)
-            # logging.debug(f"Downloading to: {self.PDF_DIRECTORY}/{filename}")
+            # logging.debug(f"Downloading to: {doi_entry.generate_file_path()}")
             email = self.config.get_string("downloaders", "header_email")
             UnpywallCredentials(email)
 
@@ -135,7 +133,7 @@ class UnpaywallDownloader(Downloader, Utils):
             else:
                 self.not_available = False
             logging.info(
-                f"Attempting unpaywall download: {self.open_url} will download to {self.PDF_DIRECTORY}/{filename}")
+                f"Attempting unpaywall download: {self.open_url} will download to {doi_entry.generate_file_path()}")
 
             if force_update_link_only:
                 return False
