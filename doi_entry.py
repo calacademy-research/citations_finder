@@ -196,7 +196,7 @@ class DoiEntry(Utils):
     def generate_file_path(self, path=None):
         if path is None:
             path = os.path.join(PDF_DIRECTORY, self.issn, str(self.date.year))
-        filename = path + self.get_filename_from_doi_entry()
+        filename = os.path.join(path, self.get_filename_from_doi_entry())
         return filename
 
     def check_file(self, path=None):
