@@ -171,4 +171,3 @@ class Downloader(ABC, Utils):
 
         logging.info(f"Downloaded {destination}")
         return True
-s
