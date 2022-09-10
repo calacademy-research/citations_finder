@@ -166,8 +166,7 @@ class Downloader(ABC, Utils):
             logging.error("No PDF file found, returning failure. ")
             self.cleandir(firefox_download_folder)
             return False
-
-        destination = f"{self.PDF_DIRECTORY}/{Utils.get_filename_from_doi_string(doi_entry.doi)}"
+        destination = doi_entry.generate_file_path()
         os.rename(f"{latest_file}", destination)
 
         logging.info(f"Downloaded {destination}")
