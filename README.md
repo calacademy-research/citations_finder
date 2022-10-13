@@ -15,7 +15,7 @@ any given institution may have.
 These papers are then converted to txt files and scanned for custom phrases, each of which has
 an associated score (scores can be negative).
 
-These results are then presentd to the user, sorted from high to low scores. The results are
+These results are then presented to the user, sorted from high to low scores. The results are
 scanned for taxonomic nomenclature and sorted into the appropriate collection.
 
 Finally, the human verified papers are exported into a directory, and a summary is exported to TSV.
@@ -133,6 +133,9 @@ Currently only tested on mac. create a virtual environment using the requirement
 
 # TODOS
 
+* Examine https://github.com/scholarly-python-package/scholarly/blob/main/scholarly/_proxy_generator.py
+  as a potenital source of captcha bypasses
+
 * We're hitting a lot of ddos protections. Detect this condition and Integrate with a VPN (ala nord vpn)
   to auto rotate the origin IP to see if this gets around the ddos wall. [no known vpn api works on mac, 
   more research required]
@@ -196,3 +199,4 @@ Currently only tested on mac. create a virtual environment using the requirement
 * Generalize to work on windows - use os.path.join instead of slashes using (os.path.sep) and os.path.join.
 
 
+Can't download these; it should work! 10.3390/plants11071002 10.3390/plants11081024 10.3390/plants11081012 are similar.
