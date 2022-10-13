@@ -134,7 +134,7 @@ Currently only tested on mac. create a virtual environment using the requirement
 # TODOS
 
 * Examine https://github.com/scholarly-python-package/scholarly/blob/main/scholarly/_proxy_generator.py
-  as a potenital source of captcha bypasses
+  as a potenital source of captcha bypasses (also check https://scholarly.readthedocs.io/en/stable/quickstart.html#using-proxies)
 
 * We're hitting a lot of ddos protections. Detect this condition and Integrate with a VPN (ala nord vpn)
   to auto rotate the origin IP to see if this gets around the ddos wall. [no known vpn api works on mac, 
