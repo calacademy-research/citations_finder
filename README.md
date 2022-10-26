@@ -133,6 +133,8 @@ Currently only tested on mac. create a virtual environment using the requirement
 
 # TODOS
 
+* Examine metapub: https://github.com/metapub as a possible source for how to download papers and/or approach
+
 * Examine https://github.com/scholarly-python-package/scholarly/blob/main/scholarly/_proxy_generator.py
   as a potenital source of captcha bypasses (also check https://scholarly.readthedocs.io/en/stable/quickstart.html#using-proxies)
 
