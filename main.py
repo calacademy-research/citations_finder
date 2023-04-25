@@ -71,6 +71,7 @@ def setup():
         sys.exit(0)
     
     if config.get_boolean('general', 'do_pdf_ingest'):
+        print("PDF INGEST")
         pdf_dir = config.get_string('general', 'pdf_ingest_directory')
         d = DoiDatabase()
         d.import_pdfs(pdf_dir, False)
@@ -78,8 +79,12 @@ def setup():
     db = DoiDatabase(config.get_int('crossref', 'scan_for_dois_after_year'),
                      config.get_int('crossref', 'scan_for_dois_before_year'))
     if config.get_boolean('crossref', 'force_update'):
+        print("CROSSREF FORCE INGEST")
+
         db.force_crossref_update(config.get_int('crossref', 'force_update_year'))
     if config.get_boolean('general', 'report_on_start'):
+        print("GENERATE DATABASE REPORT BEFORE START")
+
         report_start_year = config.get_int('general', 'report_start_year')
         report_end_year = config.get_int('general', 'report_end_year')
         report = DatabaseReport(report_start_year, report_end_year, journal=None)
@@ -94,10 +99,12 @@ def setup():
     download_end_year = config.get_int('download', 'download_end_year')
 
     if config.get_boolean('download', 'download_single_journal'):
+        print("DOWNLOAD SINGLE JOURNAL TEST MODE")
         db.download_dois(download_start_year, download_end_year,
                        journal=config.get_string('download', 'download_single_journal_issn'))
 
-    if config.get_boolean('download', 'download_all_journals'):
+    if config.get_boolean('download', 'enable_paper_download'):
+        print ("DOWNLOADING PAPERS )e")
         db.download_dois_by_journal_size(download_start_year, download_end_year)
 
     if config.get_boolean('scan', 'enabled'):

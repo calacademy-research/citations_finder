@@ -71,7 +71,11 @@ class Match(Utils):
             if score > 300:
                 color = Fore.RED
 
-            matched_line = matched_line.replace(matched, f'{color}{matched}{Fore.RESET}')
+            # we have a case where "matched" is none
+            try:
+                matched_line = matched_line.replace(matched, f'{color}{matched}{Fore.RESET}')
+            except Exception as e:
+                print(f"Error case - debug me! Missing payload matched, root case this. {e}")
             # logging.debug(f"    {regex_tuple[0]}\t{matched_line}")
 
             # matched_line = matched_line.replace('california',f'{Fore.MAGENTA}california{Fore.RESET}')
