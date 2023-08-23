@@ -30,6 +30,26 @@ class DBConnection(object):
 
     @classmethod
     def execute_query(cls, query, args=None):
+        """ Execute a SQL query on the database connection.
+
+        This code attempts to create a cursor object for the database connection. 
+        If an error occurs, such as a connection timeout, the code logs an error 
+        message and creates a new connection before creating the cursor object again.
+        Then code executes the SQL query using the cursor object. 
+        If the args parameter is not None, it substitutes the parameter values into 
+        the query using placeholder variables. If an error occurs during the 
+        query execution, such as a syntax error in the SQL, the code logs a critical 
+        error message and raises the error.
+
+
+        :param query: The query to be executed
+        :type query: str
+        :param args: Optional arguments to be substituted in the query, defaults to None
+        :type args: list or None, optional
+        :raises e: Raises an exception if there is an error executing the query
+        :return: The result of the query execution
+        :rtype: Any
+        """        
         connection = cls.get_connection()
         try:
             cursor = connection.cursor()

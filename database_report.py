@@ -14,6 +14,13 @@ class DatabaseReport:
 
 
     def _sql_date_suffix(self, and_var=True):
+        """ Constructs a SQL suffix for filtering records based on start and end years.
+        
+        :param and_var: Specifies whether to use "AND" or "WHERE" in the SQL query. Defaults to True.
+        :type and_var: bool, optional
+        :return: The constructed SQL suffix.
+        :rtype: str
+        """        
         retval = ""
         if self.start_year is not None and self.end_year is not None:
             if and_var:
@@ -37,6 +44,12 @@ class DatabaseReport:
         return retval
 
     def _load_dois(self, journal=None):
+        """ Load DOIs from a database, and potentially filter
+        by a specific journal title if desired
+
+        :param journal: The journal title to filter the DOIs by, defaults to None
+        :type journal: str, optional
+        """        
         select_dois = f"""select * from dois"""
         select_dois += self._sql_date_suffix(False)
         if journal is not None:
@@ -46,12 +59,24 @@ class DatabaseReport:
         self.dois = doif.dois
 
     def _get_journals(self):
+        """Get a list of distinct journal titles from the database.
+
+        :return: A list of unique journal titles present in the database.
+        :rtype: List[str]
+        """        
         sql = f"""select distinct journal_title from dois"""
         sql += self._sql_date_suffix(False)
 
         return DBConnection.execute_query(sql)
 
     def _get_downloaded(self, journal=None):
+        """Get the count of downloaded DOI entries.
+
+        :param journal: The specific journal name for which to get the count, defaults to None.
+        :type journal: str, optional
+        :return: The count of downloaded DOI entries for the given journal or the entire database.
+        :rtype: int
+        """        
         sql = f"""select count(*) from dois where downloaded=TRUE"""
         sql += self._sql_date_suffix()
         sql += self._sql_journal_suffix(journal)
@@ -66,6 +91,13 @@ class DatabaseReport:
     # return DBConnection.execute_query(sql)[0][0]
 
     def _get_not_downloaded(self, journal=None):
+        """Get the count of NOT downloaded DOI entries.
+
+        :param journal: The specific journal name for which to get the count, defaults to None.
+        :type journal: str, optional
+        :return: The count of NOT downloaded DOI entries for the given journal or the entire database.
+        :rtype: int
+        """        
         sql = f"""select count(*) from dois where downloaded=FALSE"""
         sql += self._sql_date_suffix()
         sql += self._sql_journal_suffix(journal)
@@ -105,7 +137,18 @@ class DatabaseReport:
         return int(DBConnection.execute_query(sql)[0][0])
 
     def report(self, journal=None, issn=None, summary=True):
+        """Generate a report on the database statistics. Note this takes a while
+        to run
 
+        :param journal: The specific journal name for which to generate the report, defaults to None.
+        :type journal: str, optional
+        :param issn: The ISSN (International Standard Serial Number) of the journal, defaults to None.
+        :type issn: str, optional
+        :param summary: If True, include a summary of general statistics; if False, exclude the summary, defaults to True.
+        :type summary: bool, optional
+        :return: A formatted string containing the report with statistics.
+        :rtype: str
+        """        
         str = ""
         if summary:
             str += f"Total DOI entries: {len(self.dois)}"

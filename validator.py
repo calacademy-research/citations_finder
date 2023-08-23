@@ -5,7 +5,6 @@ import os
 import re
 from colorama import Fore, Back, Style
 from ete3 import NCBITaxa
-import enchant
 from scan import Scan
 from datetime import datetime
 import logging
@@ -72,10 +71,13 @@ class Match(Utils):
                 color = Fore.RED
 
             # we have a case where "matched" is none
-            try:
-                matched_line = matched_line.replace(matched, f'{color}{matched}{Fore.RESET}')
-            except Exception as e:
-                print(f"Error case - debug me! Missing payload matched, root case this. {e}")
+            if matched is not None:
+                try:
+                    matched_line = matched_line.replace(matched, f'{color}{matched}{Fore.RESET}')
+                except Exception as e:
+                    print(f"Error case - debug me! Missing payload matched, root case this. {e}")
+            else: # what do we want to do if matched string is not None?
+                pass
             # logging.debug(f"    {regex_tuple[0]}\t{matched_line}")
 
             # matched_line = matched_line.replace('california',f'{Fore.MAGENTA}california{Fore.RESET}')
@@ -114,6 +116,15 @@ class Validator(Utils):
 
     @classmethod
     def create_tables(self, reset_matches_database=False):
+        """Creates a database table named "matches" if it 
+        doesn't already exist. It also includes an optional parameter 
+        reset_matches_database to determine whether the existing 
+        "matches" table should be dropped before creating a new one.
+
+        :param reset_matches_database: Determines whether the existing 
+        "matches" table should be dropped before creating a new one, defaults to False
+        :type reset_matches_database: bool, optional
+        """        
         if reset_matches_database:
             sql = "drop table matches"
             DBConnection.execute_query(sql)
@@ -141,6 +152,22 @@ class Validator(Utils):
             subprocess.call([command, full_path, target_dir])
 
     def audit(self, start_year, end_year):
+        """Run a query that combines tables 'scans' and 'dois', 
+        based on the 'doi' column. Then filter results based on 
+        start_year and end_year, score not null and >0, 
+        and  doi not null. The resulting merged table is called 
+        'candidates'. Subsequently, rename the columns, 
+        create  new object 'Match' using these columns
+          and append to 'matches' list. Lastly, invoke 'generate_notes' 
+          method on 'matches' list, and self.prompt 
+          method of the current object, passing the current 'match' object as an argument
+
+        :param start_year: interactive validate step start year
+        :type start_year: int
+        :param end_year: interactive validate step end year
+        :type end_year: int
+        """        
+
         sql = f"""select dois.doi, dois.full_path, dois.published_date, scans.title, scans.score from scans,dois
                                     left join matches m on dois.doi = m.doi
                                     where
@@ -149,10 +176,8 @@ class Validator(Utils):
                                     scans.score is not null and
                                     m.doi is NULL and
                                     score > 0
-                                    order by score desc 
-        """
-
-
+                                    order by score desc """
+        
         candidates = DBConnection.execute_query(sql)
         for candidate in candidates:
             doi = candidate[0]

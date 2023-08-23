@@ -33,6 +33,16 @@ class CrossrefJournalEntry():
 
     @staticmethod
     def create_tables():
+        """    Creates database tables if they do not already exist.
+
+        This function creates three tables:
+        1. 'issns' table with columns 'issn' (primary key) and 'type'.
+        2. 'journals' table with columns 'issn' (primary key), 'name', 'type', 'start_year', and 'end_year'.
+        3. 'crossref_journal_data' table with columns 'doi' (primary key), 'title', and 'details'.
+
+        The tables are created only if they don't already exist.
+
+        """        
         sql_create_database_table = """ CREATE TABLE IF NOT EXISTS issns (
                                             issn text primary key NOT NULL,
                                             type text

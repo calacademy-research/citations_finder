@@ -56,6 +56,15 @@ class Scan:
         DBConnection.execute_query(sql)
 
     def _write_to_db(self, write_scan_lines=False, clear_existing_records=False):
+        """Stores information about a scan operation in the database. It inserts or replaces records in the 'scans'
+        table, containing details such as DOI, file path, score, converter status, and title. If specified, it also logs
+        individual found scan lines with their associated scores and matched strings in the 'found_scan_lines' table.
+
+        :param write_scan_lines: If True, write found scan lines to the database, defaults to False
+        :type write_scan_lines: bool, optional
+        :param clear_existing_records: If True, clear existing records before writing, defaults to False
+        :type clear_existing_records: bool, optional
+        """        
         if clear_existing_records:
             Scan.clear_db_entry(self.doi_string)
         sql_insert = f"""replace into scans (doi, textfile_path,score,cannot_convert,title) VALUES (?,?,?,?,?)"""
@@ -98,6 +107,9 @@ class Scan:
         return str
 
     def _run_converter(self):
+        """Converts a PDF file to a text file using the pdftotext utility.
+
+        """        
         command = f"/usr/local/bin/pdftotext"
         pwd = os.getcwd()
         filename = self.doi_object.get_filename_from_doi_entry()
@@ -186,6 +198,13 @@ class Scan:
         return retval
 
     def scan(self, clear_existing_records=False):
+        """Perform a scan on the text content, evaluating various conditions to determine a score.
+
+        :param clear_existing_records: Clear existing records if True, defaults to False
+        :type clear_existing_records: bool, optional
+        :return: True if scanning is successful and results are logged, False otherwise
+        :rtype: bool
+        """        
         # logging.debug(f"Scanning: {self.textfile_path}")
         if self._convert_pdf() is False:
             # logging.warning(f"Missing PDF, not scanning: {self.textfile_path}")
@@ -237,6 +256,20 @@ class Scan:
         return self._scan_with_regex(regex, 1, False)
 
     def _scan_with_regex(self, regex, score_per_line, ok_after_references, do_score=True):
+        """Searches through the text content line by line using the provided regular expression pattern. For each
+         matching line, it collects the matched portion, updates the scan score, and records the match details if needed.
+
+        :param regex: The regular expression pattern to search for in each line
+        :type regex: str
+        :param score_per_line: The score value to be added for each line containing a match
+        :type score_per_line: int
+        :param ok_after_references: If True, continue scanning even after encountering reference sections, else stop
+        :type ok_after_references: bool
+        :param do_score: If True, update the scan score based on matches, defaults to True
+        :type do_score: bool, optional
+        :return: A list of matched results found in the text content
+        :rtype: list[str]
+        """        
         results = []
 
         # logging.debug(f"Scanning with regex: {regex}")
@@ -261,6 +294,8 @@ class Scan:
                 if len(next_words) == 0:
                     # logging.info(f"totally blank: {next_line}")
                     continue
+
+                # preparing the line for searching
                 if cur_line is not None:
                     cur_line = cur_line.strip()
                     # append three words of the next line
@@ -279,7 +314,8 @@ class Scan:
                         else:
                             cur_line = cur_line + f"{next_words[id]}"
                             hyphen = False
-
+                            
+                # then performing the actual search operation.
                     result = re.search(regex, cur_line)
                     if result is not None:
                         # logging.debug(".", end='')

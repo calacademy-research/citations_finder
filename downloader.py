@@ -24,6 +24,8 @@ class Downloader(ABC, Utils):
     __metaclass__ = ABCMeta
 
     def __init__(self):
+        """_summary_
+        """        
         self.DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
         self.config = Config()
@@ -38,6 +40,18 @@ class Downloader(ABC, Utils):
         }
 
     def meets_datetime_requrements(self, section, most_recent_attempt_datetime):
+        """Check if the provided conditions meet the datetime requirements.
+        If 'retry_after_datetime' in config.ini is newer/more recent than the 
+        last attempt date, return False
+
+
+        :param section: The configuration section to retrieve values from.
+        :type section: str
+        :param most_recent_attempt_datetime: The datetime of the most recent attempt.
+        :type most_recent_attempt_datetime: datetime.datetime or None
+        :return: True if the conditions meet the datetime requirements, False otherwise.
+        :rtype: bool
+        """        
         if not self.config.get_boolean(section, 'use_datetime_restriction'):
             return True
         if most_recent_attempt_datetime is None:
@@ -47,6 +61,17 @@ class Downloader(ABC, Utils):
         return datetime_object < most_recent_attempt_datetime
 
     def _download_url_to_pdf_bin(self, doi_entry, url, path):
+        """_summary_
+
+        :param doi_entry: _description_
+        :type doi_entry: _type_
+        :param url: _description_
+        :type url: _type_
+        :param path: _description_
+        :type path: _type_
+        :return: _description_
+        :rtype: _type_
+        """        
         headers = {
             'User-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
         r = requests.get(url, headers=headers, allow_redirects=True, timeout=120, verify=False)
@@ -67,16 +92,33 @@ class Downloader(ABC, Utils):
 
     @abstractmethod
     def download(self, doi_entry):
+        """_summary_
+
+        :param doi_entry: _description_
+        :type doi_entry: _type_
+        :raises NotImplementedError: _description_
+        """        
         raise NotImplementedError()
 
     @abstractmethod
     def create_tables(self):
+        """_summary_
+
+        :raises NotImplementedError: _description_
+        """        
         raise NotImplementedError()
 
     class TimeoutError(Exception):
         pass
 
     def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
+        """_summary_
+
+        :param seconds: _description_, defaults to 10
+        :type seconds: int, optional
+        :param error_message: _description_, defaults to os.strerror(errno.ETIME)
+        :type error_message: _type_, optional
+        """        
         def decorator(func):
             def _handle_timeout(signum, frame):
                 raise TimeoutError(error_message)
@@ -97,9 +139,19 @@ class Downloader(ABC, Utils):
 
     @timeout(3)
     def _close_firefox(self, driver):
+        """_summary_
+
+        :param driver: _description_
+        :type driver: _type_
+        """        
         driver.close()
 
     def cleandir(self, path):
+        """_summary_
+
+        :param path: _description_
+        :type path: _type_
+        """        
         dir = path
         for files in os.listdir(dir):
             path = os.path.join(dir, files)
@@ -109,6 +161,15 @@ class Downloader(ABC, Utils):
                 os.remove(path)
 
     def _firefox_downloader(self, url, doi_entry):
+        """_summary_
+
+        :param url: _description_
+        :type url: _type_
+        :param doi_entry: _description_
+        :type doi_entry: _type_
+        :return: _description_
+        :rtype: _type_
+        """        
         logging.info(f"Attempting download using firefox/selenium: {url}")
 
         # Doesn't work. Too bad.

@@ -10,6 +10,13 @@ class CopyOut(Utils):
         self.year = year
 
     def get_matches(self):
+        """executes query to retrieve rows from two tables - 
+        matches, and doi - and keeps the row if doi exists in both 
+        table and 'ignore' column in 'matches' table is 0.
+
+        :return: The query results containing matched rows.
+        :rtype: list
+        """        
         sql = f"""select matches.doi, 
                     matches.collection,
                     dois.full_path,
@@ -25,6 +32,16 @@ class CopyOut(Utils):
         return results
 
     def make_target_dir(self, dest_dir, collection):
+        """Creates directories that are 3 layers deep,
+        'publish', defined in config.ini -> collection -> year
+
+        :param dest_dir: directory (where main.py is stored)
+        :type dest_dir: str
+        :param collection: collections directory, i.e. botany, within dest_dir
+        :type collection: str
+        :return: year directory within collection_dir
+        :rtype: str
+        """        
         if not os.path.exists(dest_dir):
             os.makedirs(dest_dir)
 
@@ -37,6 +54,15 @@ class CopyOut(Utils):
         return year_dir
 
     def _copy_out_file(self, origin_path, collection, dest_dir):
+        """Copies an origin file to the destination directory based on the given collection.
+
+        :param origin_path: The path of the origin file to be copied.
+        :type origin_path: str
+        :param collection: The name of the collection directory to copy the file into.
+        :type collection: str
+        :param dest_dir: The destination directory where the file will be copied.
+        :type dest_dir: str
+        """        
         target_dir = self.make_target_dir(dest_dir, collection)
         target = target_dir + f"/{os.path.basename(origin_path)}"
         if not os.path.exists(target):
@@ -44,6 +70,13 @@ class CopyOut(Utils):
             copyfile(origin_path, target)
 
     def copy_out_files(self, dest_dir="./"):
+        """Copies files based on the matched rows retrieved from the 
+        database, 'matches' table.
+        Skips copying if the 'digital_only' flag is True.
+
+        :param dest_dir: The destination directory where the files will be copied to, defaults to "./"
+        :type dest_dir: str, optional
+        """        
         for cur_match in self.get_matches():
             collection = cur_match[1]
             origin_path = cur_match[2]

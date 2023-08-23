@@ -24,6 +24,14 @@ class ScanDatabase(Utils):
 
     @classmethod
     def create_tables(self, reset_tables=False):
+        """Creates two database tables: "scans" and "found_scan_lines". 
+        It also includes an optional parameter reset_tables to determine 
+        whether existing tables should be dropped before creating new ones
+
+        :param reset_tables: determine whether existing tables should be 
+        dropped before creating new ones, defaults to False
+        :type reset_tables: bool, optional
+        """        
         if reset_tables:
             try:
                 sql = "drop table scans"
@@ -60,15 +68,36 @@ class ScanDatabase(Utils):
         return scan
 
     def do_scan(self, doi):
+        """Performs a scan on the provided DOI using the Scan class in scan.py
+
+        :param doi: DOI
+        :type doi: str
+        """        
         scan = Scan(doi)
         if scan.score is None:
             if scan.broken_converter is not True:
                 scan.scan()
 
     def scan_pdfs(self, start_year, end_year, rescore=False, directory="./"):
+        """Scans PDFs for DOIs within the specified year range. It retrieves DOIs that 
+        have been downloaded but not yet scanned.
+
+        :param start_year: The starting year of the range for which PDFs should be scanned.
+        :type start_year: int
+
+        :param end_year: The ending year of the range for which PDFs should be scanned.
+        :type end_year: int
+
+        :param rescore: Flag indicating whether to rescore previously scanned DOIs, defaults to False.
+        :type rescore: bool, optional
+
+        :param directory: The directory where the scanned PDFs should be saved, defaults to "./".
+        :type directory: str, optional
+        """        
         if not rescore:
-            sql = f"""SELECT * FROM dois LEFT JOIN scans ON dois.doi = scans.doi WHERE downloaded = 1 and scans.doi IS NULL
-            and {self.sql_year_restriction(start_year, end_year)}"""
+            sql = f"""SELECT * FROM dois LEFT JOIN scans ON dois.doi = scans.doi 
+                WHERE downloaded = 1 and scans.doi IS NULL
+                and {self.sql_year_restriction(start_year, end_year)}"""
             dois = DoiFactory(sql).dois
         else:
             dois = self.doi_db.get_dois(start_year=start_year, end_year=end_year, journal_issn=None)
