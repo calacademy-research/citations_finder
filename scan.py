@@ -2,7 +2,7 @@ import re
 import subprocess
 import os
 from config import Config
-
+from shutil import which
 from db_connection import DBConnection
 from doi_entry import DoiFactory
 import logging
@@ -16,6 +16,15 @@ class Scan:
     config = Config()
 
     def __init__(self, doi_object=None, doi_string=None):
+        """Initializes an instance of the Scan class.
+
+        :param doi_object: An object representing a Digital Object Identifier (DOI), defaults to None.
+        :type doi_object: DOIObjectType, optional
+        :param doi_string: A string representing a DOI, defaults to None.
+        :type doi_string: str, optional
+        :raises NotImplementedError: If neither doi_object nor doi_string is provided.
+        :raises RecordNotFoundException: If the DOI query does not yield the expected results.
+        """        
         self.collection_tag_regex = self._get_collection_tag_regex()
         self.text_directory = self.config.get_string('scan', 'scan_text_directory')
         if not os.path.exists(self.text_directory):
@@ -84,6 +93,12 @@ class Scan:
                 DBConnection.execute_query(sql_insert, args)
 
     def _init_from_object(self, doi_object):
+        """Initializes the object using information from a DOI object.
+
+        :param doi_object: The DOI object containing information about the associated document.
+        :type doi_object: DOIObjectType  # Replace 'DOIObjectType' with the actual type of the DOI object
+        :raises FileNotFoundError: If the PDF file associated with the DOI is missing.
+        """        
         self.textfile_path = None
         self.broken_converter = None
         if doi_object.full_path is None:
@@ -110,15 +125,31 @@ class Scan:
         """Converts a PDF file to a text file using the pdftotext utility.
 
         """        
-        command = f"/usr/local/bin/pdftotext"
+        pdf_to_text_command = "pdftotext"
+
+        # Check if pdftotext is available in the system's PATH
+        pdftotext_path = which(pdf_to_text_command)
+        if pdftotext_path is None:
+            raise Exception("pdftotext command not found. Make sure it's installed and available in PATH.")
+
         pwd = os.getcwd()
         filename = self.doi_object.get_filename_from_doi_entry()
         txt_file = f"{self.text_directory}/{filename.strip('.pdf')}.txt"
 
         pdf_file = f"{pwd}/{self.doi_object.full_path}"
-        subprocess.call([command, pdf_file, txt_file])
+        subprocess.call([pdf_to_text_command, pdf_file, txt_file])
 
     def _convert_pdf(self, force=False):
+        """Checks if a text file corresponding to the DOI object's PDF file
+        exists in the specified text directory. If not, it uses the `_run_converter`
+        method to convert the PDF to a text file. If the conversion is successful, the
+        path to the generated text file is stored in `self.textfile_path`.
+
+        :param force: If set to True, forces re-conversion even if the text file exists, defaults to False
+        :type force: bool, optional
+        :return: True if the conversion is successful or the text file already exists, False otherwise
+        :rtype: bool
+        """        
         doi_basename = os.path.basename(self.doi_object.full_path)
         doi_basename = doi_basename.rsplit(".", 1)[0]
         doi_textfile = os.path.join(self.text_directory, doi_basename + ".txt")
@@ -137,9 +168,16 @@ class Scan:
 
     @classmethod
     def _get_collection_tag_regex(cls):
+        """Generates a regular expression pattern for matching collection tags.
+
+        The generated pattern is used to identify and extract collection tags from text.
+
+        :return: A regular expression pattern for collection tag matching.
+        :rtype: str
+        """        
         institution_root_name = eval(cls.config.get_string('scan_search_keys', 'institution_root_name'))
         collections_with_id_strings = cls.config.get_list('scan_search_keys', 'collections_with_id_strings')
-        collection_tag_regex = f"(([ \(\[])+|^)(?i){institution_root_name}"
+        collection_tag_regex = f"(?i)(([ \(\[])+|^){institution_root_name}"
         for id in collections_with_id_strings:
             collection_tag_regex += f"({id})*"
         collection_tag_regex += "[: ]+[ ]*[0-9\-]+"
@@ -147,6 +185,13 @@ class Scan:
 
     @classmethod
     def _get_collection_manager_names(cls):
+        """Retrieves a list of collection manager names from the configuration,
+        processes them for various variations, and returns a list of tuples containing
+        the processed name variations and associated scores.
+
+        :return: A list of tuples containing processed name variations and scores
+        :rtype: list
+        """        
         collection_manager_names = cls.config.get_list('scan_search_keys', 'collection_manager_names')
         all_name_variations = []
         for test_string, score in collection_manager_names:
@@ -181,6 +226,12 @@ class Scan:
 
     @classmethod
     def _get_scored_strings(cls):
+        """Retrieves a list of scored strings for matching from the configuration
+        and returns it.
+
+        :return: A list of scored strings for matching as defined in config.ini
+        :rtype: list
+        """        
         # Test that hypehens and colons are parsed correctly in the
         # reguar expression sets
         string_set_pre_reference = cls.config.get_list('scan_search_keys', 'scored_strings')
@@ -240,10 +291,17 @@ class Scan:
         return True
 
     def _scan_keywords(self, string_set, ok_after_references=False):
+        """Scans a set of test strings for keywords using regular expressions and updates the score accordingly.
+
+        :param string_set: A set of tuples containing test strings and their corresponding scores.
+        :type string_set: set(tuple(str, int))
+        :param ok_after_references: Indicates whether scoring is allowed after references, defaults to False.
+        :type ok_after_references: bool, optional
+        """        
         for test_string, score in string_set:
             test_string = test_string.lower()
             # logging.info(f"Scanning test string: {test_string}")
-            regex = f"(([ \(\[])+|^)(?i){test_string}(([ ,.:])+|$)"
+            regex = f"(?i)(([ \(\[])+|^){test_string}(([ ,.:])+|$)"
             regex_result_count = self._scan_with_regex(regex, score, ok_after_references)
             # if regex_result_count > 0:
             #     logging.info(f"Found: {test_string} Score: {self.score}")
@@ -314,7 +372,7 @@ class Scan:
                         else:
                             cur_line = cur_line + f"{next_words[id]}"
                             hyphen = False
-                            
+
                 # then performing the actual search operation.
                     result = re.search(regex, cur_line)
                     if result is not None:

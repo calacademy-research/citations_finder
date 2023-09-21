@@ -87,6 +87,19 @@ class CopyOut(Utils):
             self._copy_out_file(origin_path, collection, dest_dir)
 
     def write_match(self, cur_match, filehandle, db):
+        """Write a matched data record to a file.
+
+        The matached data record has 2 parts. The first part includes DOI. 
+        The second part is "identifier" from "matched_collectin_ids" table in 
+        the databse (example: cas 229582)
+
+        :param cur_match: A tuple containing matched data fields, including DOI, collection, origin_path,published_date, journal_title, date_added, notes, and digital_only.
+        :type cur_match: tuple
+        :param filehandle: The file handle where the matched data will be written.
+        :type filehandle: file
+        :param db: An instance of the DoiDatabase class used for retrieving DOI record information.
+        :type db: DoiDatabase
+        """        
         doi = cur_match[0]
         doi_record = db.get_doi(doi)
         collection = cur_match[1]
@@ -113,6 +126,11 @@ class CopyOut(Utils):
         filehandle.write("\n")
 
     def dump_file_tsv(self, path="./"):
+        """Dump the matched data to a TSV file.
+
+        :param path: The directory path where the TSV file will be saved. Defaults to "./".
+        :type path: str, optional
+        """        
         if not os.path.exists(path):
             os.makedirs(path)
         db = DoiDatabase()
@@ -123,6 +141,14 @@ class CopyOut(Utils):
             self.write_match(cur_match, fh, db)
 
     def dump_custom(self, special_note_string, path):
+        """Dump matched data (from found_scan_lines table in databsse) 
+        with a special note to a TSV file.
+
+        :param special_note_string: A string representing the special note to filter matched data. These include: "antcat", "antweb", "inaturalist", "catalogue of fishes"
+        :type special_note_string: str
+        :param path: The directory path where the TSV file will be saved.
+        :type path: str
+        """        
         if not os.path.exists(path):
             os.makedirs(path)
 

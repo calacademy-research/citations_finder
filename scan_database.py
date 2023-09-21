@@ -112,6 +112,13 @@ class ScanDatabase(Utils):
 
 
     def scan_for_specimen_ids(self, reset_tables=False):
+        """Scans for specimen IDs in the matched documents and stores them in 
+        the database table 'matched_specimen_ids'.
+
+        :param reset_tables: If True, drops the 'matched_specimen_ids' table 
+        and recreates it, defaults to False.
+        :type reset_tables: bool, optional
+        """        
         if reset_tables:
             sql = "drop table matched_specimen_ids"
             DBConnection.execute_query(sql)

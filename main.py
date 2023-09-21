@@ -142,7 +142,6 @@ def setup():
     download_start_year = config.get_int('download', 'download_start_year')
     download_end_year = config.get_int('download', 'download_end_year')
 
-    # below checks for PDF existence but doesn't download, is that what we want??
     if config.get_boolean('download', 'ensure_downloaded_has_pdf'):
         print ("ENSURE THAT DOWNLOADED DOI ENTRIES HAVE ASSOCIATED PDF FILES")
         db.ensure_downloaded_has_pdf(download_start_year, download_end_year)
@@ -157,7 +156,7 @@ def setup():
     if config.get_boolean('download', 'enable_paper_download'):
         print ("DOWNLOADING PAPERS")
         db.download_dois_by_journal_size(download_start_year, download_end_year)
-#here on 8/21 - ran into problem, ask joe, skip for now
+
     if config.get_boolean('scan', 'enabled'):
         scan_start_year = config.get_int('scan', 'scan_start_year')
         scan_end_year = config.get_int('scan', 'scan_end_year')
@@ -174,15 +173,7 @@ def setup():
     validate_enabled = config.get_boolean('validate', 'enabled')
 
     if validate_enabled:
-        '''
-        issue: 
-        when choose print lines (L), prompt 'Error case - debug me! Missing payload 
-        matched, root case this. replace() argument 1 must be str, not None'
-        &
-        when choose o, 'The file /Users/Sophiaaa/Documents/CalAcademy/citations_finder
-        /./pdf/1932-6203/2022/10.1371_journal.pone.0265432.pdf does not exist.'
 
-        '''
         validate_start_year = config.get_int('validate', 'validate_start_year')
         validate_end_year = config.get_int('validate', 'validate_end_year')
         validator = Validator()
@@ -220,7 +211,7 @@ def setup():
     #
     # test_known_good(db)
 
-    return
+        return
     # above line used to be "sys.exit(1)", but it prevents sphinx autodoc from working
 
 

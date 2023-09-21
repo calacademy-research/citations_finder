@@ -277,8 +277,7 @@ class DoiDatabase(Utils):
         :type start_year: int
         :param end_year: The ending year of the date range.
         :type end_year: int
-        :param journal_issn: The ISSN (International Standard Serial Number) 
-        of the journal to filter the results, defaults to None.
+        :param journal_issn: The ISSN (International Standard Serial Number) of the journal to filter the results, defaults to None.
         :type journal_issn: str, optional
         :return: A list of DOI entries that match the specified criteria.
         :rtype: List[DoiEntry]
@@ -329,9 +328,7 @@ class DoiDatabase(Utils):
         :type end_year: int
         :param journal: The journal name used as a filter for DOI entries, or None for all journals.
         :type journal: str or None
-        :param issn: The ISSN (International Standard Serial Number) used as a filter for DOI entries.
-        If True, the ISSN will be used to filter DOI entries; if False, it will not
-        be used for filtering.
+        :param issn: The ISSN (International Standard Serial Number) used as a filter for DOI entries. If True, the ISSN will be used to filter DOI entries; if False, it will not be used for filtering.
         :type issn: bool
         """        
         select_dois = self._generate_select_sql(start_year, end_year, issn)

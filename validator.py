@@ -28,6 +28,25 @@ class Match(Utils):
         self.collection = collection
 
     def generate_notes(self):
+        """Generate and replace notes based on specified flagged terms in the scanned text.
+
+        This method generates notes for a scanned document based on specific flagged terms that are found
+        in the scanned text lines. It searches for predefined flagged terms such as 'inaturalist', 'antweb',
+        'antcat', and 'catalog of fishes' within the scanned text lines associated with the DOI.
+
+        The method retrieves lines and scores from the 'found_scan_lines' table in the database that match the
+        given DOI. For each line, it checks whether any of the flagged terms are present. If a flagged term is
+        found in a line, the corresponding flag is recorded in the 'matches' dictionary.
+
+        After processing all the lines, the method constructs a list of matched flag notes from the 'matches' dictionary.
+        These matched flag notes are then joined together using commas to create the final 'notes' string.
+
+        Finally, the method uses the 'replace_note' method to replace the existing notes associated with the DOI
+        with the newly generated notes.
+
+        :return: None
+        """        
+
         flag_notes = ['inaturalist', 'antweb', 'antcat', 'catalog of fishes']
         sql = f"select line,score from found_scan_lines where doi = '{self.doi}'"
         lines = DBConnection.execute_query(sql)
@@ -56,6 +75,27 @@ class Match(Utils):
             print(f"digital_only: {self.digital_only}")
 
     def print_matched_lines(self):
+        """Print scanned lines with highlighted matched strings and their associated scores.
+
+        This method retrieves the scanned lines along with their scores and matched strings from the
+        'found_scan_lines' table in the database for a specific DOI. It then iterates through each line
+        and processes the matched string and score to display the line with highlighted matched strings
+        in different colors based on the score.
+
+        The color of the highlighted matched string depends on the score value:
+        - If the score is less than 0, the matched string is highlighted in magenta.
+        - If the score is between 0 and 200, the matched string remains the default color.
+        - If the score is greater than 200, the matched string is highlighted in yellow.
+        - If the score is greater than 300, the matched string is highlighted in red.
+
+        If a matched string is present in the line, the method replaces the matched string in the line with
+        the highlighted version using the appropriate color. If the matched string is `None`, the method
+        does not perform any replacement.
+
+        Note: This method is useful for visually inspecting and highlighting matched strings in the scanned text.
+
+        :return: None
+        """        
         sql = f"select line,score,matched_string from found_scan_lines where doi = '{self.doi}'"
         lines = DBConnection.execute_query(sql)
         for line in lines:
@@ -86,6 +126,8 @@ class Match(Utils):
             logging.info(f"{score}: {matched_line}")
 
     def open(self):
+        """Open the associated PDF file using the default system PDF viewer.
+        """        
         command = "/usr/bin/open"
         pwd = os.getcwd()
         pdf_file = f"{pwd}/{self.full_path}"
@@ -93,6 +135,17 @@ class Match(Utils):
 
     # Ignore is for papers that aren't correct matches
     def update(self, ignore, collection=None,digital_only=None):
+        """Updates match records for the DOI entry in the database. It replaces existing records
+        with new data and attributes.
+
+        :param ignore: Indicates whether the DOI entry should be ignored, typically a boolean value.
+        :type ignore: bool
+        :param collection: The collection associated with the DOI entry, defaults to None.
+        :type collection: str, optional
+        :param digital_only: Indicates whether the DOI entry is digital-only, defaults to None.
+        :type digital_only: bool, optional
+        :return: None
+        """        
         #  for updating match records
         # sql = f"""delete from matches where doi='{self.doi}'"""
         # DBConnection.execute_query(sql)
@@ -121,9 +174,9 @@ class Validator(Utils):
         reset_matches_database to determine whether the existing 
         "matches" table should be dropped before creating a new one.
 
-        :param reset_matches_database: Determines whether the existing 
-        "matches" table should be dropped before creating a new one, defaults to False
+        :param reset_matches_database: Determines whether the existing "matches" table should be dropped before creating a new one, defaults to False
         :type reset_matches_database: bool, optional
+
         """        
         if reset_matches_database:
             sql = "drop table matches"
@@ -158,9 +211,9 @@ class Validator(Utils):
         and  doi not null. The resulting merged table is called 
         'candidates'. Subsequently, rename the columns, 
         create  new object 'Match' using these columns
-          and append to 'matches' list. Lastly, invoke 'generate_notes' 
-          method on 'matches' list, and self.prompt 
-          method of the current object, passing the current 'match' object as an argument
+        and append to 'matches' list. Lastly, invoke 'generate_notes' 
+        method on 'matches' list, and self.prompt 
+        method of the current object, passing the current 'match' object as an argument
 
         :param start_year: interactive validate step start year
         :type start_year: int
@@ -222,6 +275,17 @@ class Validator(Utils):
             self.prompt_digital(match)
 
     def get_lineage(self, word, verbose=False):
+        """Retrieves the taxonomic lineage of a given word (typically a taxonomic name) using the NCBI Taxonomy
+        database. It uses the `get_name_translator` and `get_lineage` functions from the `ncbi` module to fetch the
+        taxonomic lineage information.
+
+        :param word: The word for which the taxonomic lineage needs to be retrieved.
+        :type word: str
+        :param verbose: If True, display additional verbose information, defaults to False.
+        :type verbose: bool, optional
+        :return: A list of taxonomic names representing the lineage of the given word.
+        :rtype: list[str]
+        """        
         name2taxid = ncbi.get_name_translator([word])
         if len(name2taxid) == 0:
             return None
@@ -239,6 +303,15 @@ class Validator(Utils):
         return names
 
     def categorize_lineage(self, lineages, verbose=False):
+        """Categorizes a given set of lineages into predefined departments.
+
+        :param lineages: A list of lineages to categorize.
+        :type lineages: list[str]
+        :param verbose: If True, display verbose matching information, defaults to False.
+        :type verbose: bool, optional
+        :return: The categorized department name, or None if no match is found.
+        :rtype: str or None
+        """        
         # lanka matching to ento, incorrect
         # Matching insecta to entomology via lineage: ['root', 'cellular organisms', 'eukaryota', 'opisthokonta', 'metazoa', 'eumetazoa', 'bilateria', 'protostomia', 'ecdysozoa', 'panarthropoda', 'arthropoda', 'mandibulata', 'pancrustacea', 'hexapoda', 'insecta', 'dicondylia', 'pterygota', 'neoptera', 'endopterygota', 'coleoptera', 'polyphaga', 'cucujiformia', 'chrysomeloidea', 'chrysomelidae', 'galerucinae', 'alticini', 'lanka']
         # It's in entomology
@@ -290,6 +363,13 @@ class Validator(Utils):
         return retval
 
     def analyze_title(self, title, verbose=False):
+        """Analyzes a title to determine the relevant department based on taxonomy keywords.
+
+        :param title: The title to analyze.
+        :type title: str
+        :param verbose: If True, display verbose information during analysis, defaults to False.
+        :type verbose: bool, optional
+        """        
         # Valid taxa: Curcuma
         # ['root', 'cellular organisms', 'Eukaryota', 'Viridiplantae', 'Streptophyta', 'Streptophytina', 'Embryophyta', 'Tracheophyta', 'Euphyllophyta', 'Spermatophyta', 'Magnoliopsida', 'Mesangiospermae', 'Liliopsida', 'Petrosaviidae', 'commelinids', 'Zingiberales', 'Zingiberaceae', 'Curcuma']
 
@@ -309,6 +389,11 @@ class Validator(Utils):
                 logging.info(f"  Lineage:{lineage}")
 
     def prompt(self, match):
+        """Prompt the user for actions related to a given match.
+
+        :param match: The match to prompt for.
+        :type match: Match
+        """        
         exit = False
         while not exit:
             match.print()
@@ -359,6 +444,11 @@ class Validator(Utils):
         match.update(False, collection=match.collection,digital_only=digital_only)
 
     def prompt_add_type(self, match):
+        """Prompt the user to add a collection type to the given match.
+
+        :param match: The match to add a collection type to.
+        :type match: Match
+        """        
         collection_type = None
         while collection_type is None:
             option = input(
