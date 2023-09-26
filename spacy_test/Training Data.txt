@@ -1,0 +1,32 @@
+text1 = "The samples studied by Kathriner et al. (2014) as H. tenkatei are nested within this clade (CAS206638, ZRC26167, CAS208159, and CAS 229632). H. tenkatei was elevated to a valid species based on the examination of the type specimens by Rösler and Glaw (2010)."
+
+text2 = "CAS 207622"
+
+text3 = "Contemporary samples and museum specimens of Varanus niloticus and V. ornatus utilized in this study. The specimen ID
+refers to the field number (contemporary) or museum accession number (archival specimens). Museum acronyms: AMNH–American
+Museum of Natural History (New York, NY, USA), CAS–California Academy of Sciences (San Francisco, CA, USA), FLMNH–
+Florida Museum of Natural History (Gainesville, FL, USA), MCZ–Museum of Comparative Zoology, Harvard (Cambridge, MA,
+USA), MNHN-RA– Muséum national d’Histoire naturelle (Paris, France), MVZ–Museum of Vertebrate Zoology (Berkeley, CA,
+USA), NHM–Natural History Museum (London, UK), PEM–Port Elizabeth Museum, Bayworld (Port Elizabeth, South Africa),
+UMMZ–University of Michigan Museum of Zoology (Ann Arbor, MI, USA), USNM–National Museum of Natural History,
+Smithsonian Institution (Washington, DC, USA) , UTEP–University of Texas at El Paso (El Paso, TX, USA), UWBM–Burke
+Museum of Natural History and Culture (Seattle, WA, USA), SANBI–South Africa National Biodiversity Institute (Silverton, South
+Africa)."
+
+text4 = "CAS 198428"
+
+text5 = "The taxon Constrictor c. sigma was described based on three specimens from María Madre Island, Tres Marías Islands, Nayarit, Mexico by Smith (1943); types: CAS 58681, USNM 24672 46484 [holotype]"
+
+text6 = "We thank Aaron Ambos, Akira, Matthew Graham, and Randy English for help with sampling; Museum of
+Vertebrate Zoology, University of California, Berkeley and California Academy of Sciences for loaning of tissue
+samples; Robert Hijmans, Beth Shapiro, Simon Ho, John McCormack, Eric Waltari, and Robert Boria for valuable
+advice and information; the Laboratoire des Sciences du Climat et de l’Environnement for collecting and archiving
+the model data"
+
+text7 = "AntWeb. (2020). Version 8.31. California Academy of Science, online at https://www.antweb.org. Accessed 28 May 2020."
+
+text8 = "Isela sp. (as Kilifina -MYSM-002-KENYA). KENYA: Kwale, 30 km S Mombasa, 12.xi.1992, on diplurids webs, V & B Roth, 39° 40′ E 4° 10′ S, 8♀ 7♂ 2 juvs (CAS, MYSM-0020)."
+
+text9 = "Maymena mayana. GUATEMALA: Alta Vera Paz, Gruta de Lanquin, 6.ii.1980, B-V. Roth, 4♀ ♂ (CAS). MEXICO: Veracruz, Municipio de Atoyac, Grutas de Atoyac, 18.9215° N 96.7653° W, A. Gluesenkamp C. Savvas P. Sprouse E. Gonzalez O. Francke, 22.ix.2004, 460 m, in cave, 5♀ 2♂ (AMNH, AGG 951, ATOL, 95% etOH)."
+
+text10 = "Holotype. Deposited in the California Academy of Sciences geology type collection, San Francisco, California, under catalog number 101120."

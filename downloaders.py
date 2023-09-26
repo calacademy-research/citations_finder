@@ -7,6 +7,9 @@ import concurrent.futures
 from more_itertools import grouper
 import logging
 
+from doi_entry import DoiEntry
+
+
 class Downloaders:
 
     def __init__(self):
@@ -52,7 +55,7 @@ class Downloaders:
             if self.download(doi_entry):
                 doi_entry.mark_successful_download()
 
-    def download(self, doi_entry):
+    def download(self, doi_entry: DoiEntry):
         if doi_entry.downloaded:
             return True
         if doi_entry.check_file():
