@@ -13,11 +13,20 @@ import logging
 class UnpaywallDownloader(Downloader, Utils):
 
     def __init__(self):
+        """initializes the UnpaywallDownloader object by calling the 
+        constructor of the superclass(Downloader) using 'super().__init__()'. 
+        It sets several instance attributes to None, including 'open_url',
+        'most_recent_firefox_failure', 'most_recent_attempt', 'error_code', 
+        and 'firefox_failure'. It then calls the 'create_tables' method to 
+        create the 'unpaywall_downloader' table in the database.
+
+        Note: The 'self' parameter refers to the instance of the 
+        UnpaywallDownloader class being created.
+        """        
         super().__init__()
         self.open_url = None
         self.most_recent_firefox_failure = None
         self.most_recent_attempt = None
-        self.error_code = None
         self.error_code = None
         self.firefox_failure = None
         self.create_tables()
@@ -25,6 +34,15 @@ class UnpaywallDownloader(Downloader, Utils):
 
     @classmethod
     def create_tables(self):
+        """Creates the 'unpaywall_downloader' table in the database 
+        if it does not already exist.
+        The table schema includes columns for DOI (doi), open URL (open_url), 
+        most recent attempt timestamp (most_recent_attempt),
+        most recent Firefox failure timestamp (most_recent_firefox_failure), 
+        error code (error_code), and not available flag (not_available).
+
+        The DOI column is set as the primary key to ensure uniqueness of DOI entries in the table.
+        """        
         sql_create_database_table = """ create table IF NOT EXISTS unpaywall_downloader
                                         (
                                             doi TEXT primary key,
@@ -38,12 +56,34 @@ class UnpaywallDownloader(Downloader, Utils):
         DBConnection.execute_query(sql_create_database_table)
 
     def _update_unpaywall_database(self, doi):
+        """Updates the Unpaywall database with the download information for the 
+        provided DOI. It inserts or replaces a record in the 'unpaywall_downloader'
+        table with the DOI, open URL, most recent attempt timestamp, most recent 
+        Firefox failure timestamp, error code, and not available flag. The method
+        uses the class attributes `self.open_url`, `self.most_recent_firefox_failure`
+        , `self.error_code`, and `self.not_available`to populate the database record.
+
+        :param doi: The DOI for which the download information is to be updated in the database.
+        :type doi: str
+        """        
 
         sql = "INSERT OR REPLACE INTO unpaywall_downloader(doi, open_url, most_recent_attempt, most_recent_firefox_failure,error_code,not_available) VALUES(?,?,?,?,?,?)"
         args = [doi, self.open_url, datetime.now(), self.most_recent_firefox_failure, self.error_code,self.not_available]
         DBConnection.execute_query(sql, args)
 
     def download(self, doi_entry):
+        """Attempts to download a DOI entry from Unpaywall based on the given 
+        DOI and the configuration settings. The method first retrieves the
+        most recent downloaddetails from the Unpaywall database for the provided 
+        DOI. If the DOI has been downloaded previously, it checks the 
+        configuration settings to determine whether to retry the 
+        download based on different conditions.
+
+        :param doi_entry: The DOI entry to download.
+        :type doi_entry: DoiEntry
+        :return: True if the download is successful, False otherwise.
+        :rtype: bool
+        """        
         self.most_recent_firefox_failure = None
         self.open_url = None
         self.error_code = None
@@ -91,6 +131,18 @@ class UnpaywallDownloader(Downloader, Utils):
     # Crossref downloader has some good code to extract PDF link
     # from HTML
     def _download_link(self, doi_entry):
+        """Attempts to download the DOI entry using a direct link if available
+          in the DOI entry details (dois table, details column). The method 
+          first checks if the DOI entry has a 'link' field in its details. If 
+          the field exists, it retrieves the direct link to the PDF file and 
+          attempts to download the PDF. If the download is successful, it 
+          returns True; otherwise, it returns False.
+
+            :param doi_entry: The DOI entry object to download.
+            :type doi_entry: DoiEntry
+            :return: True if the download is successful, False otherwise.
+            :rtype: bool
+        """        
         if 'link' in doi_entry.details:
             direct_link = doi_entry.details['link'][0]['URL']
         else:
@@ -101,6 +153,19 @@ class UnpaywallDownloader(Downloader, Utils):
         return is_good
 
     def _download_unpaywall(self, doi_entry):
+        """Attempts to download the DOI entry from Unpaywall based on the given
+        DOI entry object. The method retrieves configuration settings and performs
+        various checksto determine the appropriate download strategy. If the DOI 
+        entry is available through Unpaywall,it attempts to download the PDF 
+        file using the direct link. If the download is successful,it returns True, 
+        otherwise False.
+
+        :param doi_entry: The DOI entry object to download.
+        :type doi_entry: DoiEntry
+        :raises Exception: Raises an exception if the download process encounters critical issues.
+        :return: True if the download is successful, False otherwise.
+        :rtype: bool
+        """        
         logging.info(f"Attempting unpaywall... @{datetime.now()}")
         use_firefox_downloader = self.config.get_boolean('unpaywall_downloader', 'firefox_downloader')
         retry_firefox_failure = self.config.get_boolean('unpaywall_downloader', 'retry_firefox_failure')
@@ -115,11 +180,11 @@ class UnpaywallDownloader(Downloader, Utils):
 
             if self.not_available == 1 and do_not_refetch_links:
                 logging.warning("Do not re-pull missing unpaywall links")
-
                 return False
 
             if self.open_url is None or force_open_url_update:
                 self.open_url = Unpywall.get_pdf_link(doi_entry.doi)
+
             else:
                 logging.info(f"re-using url from last unpaywall pull: {self.open_url}..")
                 sleep_time = self.config.get_int('unpaywall_downloader', 're_used_direct_url_sleep_time')

@@ -14,13 +14,28 @@ import journal_finder
 import logging
 
 def download_single_doi(doi, config):
+    """This function handles the retrieval of DOI information, 
+    checks if the DOI exists in the database, dois table, 
+    and initiates the download of the associated document using 
+    class Downloaders in downloaders.py
+
+    :param doi: The DOI  of the document to be downloaded.
+    :type doi: str
+    :param config: The configuration settings for the download.
+    :type config: dict
+    :return: None
+
+    Limitations here: if doi specified is shown 
+    """    
     logging.info("Single DOI download mode")
     select_doi = f"""select * from dois where doi='{doi}'"""
     doif = DoiFactory(select_doi)
     doi_list = doif.dois
     if len(doi_list) == 0:
         logging.critical(f"Single download failed - DOI not in system: {select_doi} ")
-        sys.exit(1)
+        raise ValueError("DOI not found in the system") 
+        # above line used to be "sys.exit(1)", but it prevents sphinx autodoc from working
+
     downloaders = Downloaders()
 
     for doi_entry in doi_list:
@@ -28,6 +43,20 @@ def download_single_doi(doi, config):
 
 
 def retry_failed_unpaywall_links(config):
+    """Retry failed unpaywall downloads for DOIs. 
+    
+    This function retrieves the list of DOIs that failed to download from the unpaywall service. 
+    Failed DOIs are characterized as a) downloaded column = False in dois table, and 
+    b) open_url column in unpaywall_downloader table has a url address. Then funtion 
+    attempts to retry the download for each DOI. If a download is successful, the DOI is marked
+    as a successful download.
+
+    :param config: user configuration settings in config.ini, [general]
+    :type config: dict
+
+    :return: None
+
+    """    
     logging.info("Retrying failed unpaywall downloads")
     select_dois = f"""select * from dois, unpaywall_downloader where downloaded=False 
      and dois.doi = unpaywall_downloader.doi and unpaywall_downloader.open_url is not null"""
@@ -35,6 +64,7 @@ def retry_failed_unpaywall_links(config):
     doif = DoiFactory(select_dois)
     doi_list = doif.dois
     downloaders = Downloaders()
+    
 
     for doi_entry in doi_list:
         if downloaders.download(doi_entry):
@@ -53,10 +83,18 @@ def setup_tables():
 # TODO: some missing pdfs are marked as downloaded, we need a cross check step to mark
 # missing as missing.
 def setup():
+    """This is the main function being ran.
+    
+    Reads the configuration settings and executes 
+    different blocks of code based on the configuration option.
+
+    :return: None
+    
+    """    
     config = Config()
     setup_tables()
 
-    if config.get_boolean('journal population', 'populate_journals'):
+    if config.get_boolean('journal population', 'populate_journals'): 
         gbif_url_list = config.get_list('journal population', 'gbif_api_collection_links')
         for url in gbif_url_list:
             logging.info(f"Processing journals for population from link: {url}")
@@ -64,24 +102,31 @@ def setup():
 
     if config.get_boolean('general', 'download_single_doi_mode'):
         download_single_doi(config.get_string('general', 'download_single_doi'), config)
-        sys.exit(0)
+        return None
+        # above line used to be "sys.exit(0)", but it prevents sphinx autodoc from working
 
     if config.get_boolean('general', 'retry_failed_unpaywall_links'):
         retry_failed_unpaywall_links(config)
-        sys.exit(0)
+        return None
+        # above line used to be "sys.exit(0)", but it prevents sphinx autodoc from working
     
-    if config.get_boolean('general', 'do_pdf_ingest'):
+    if config.get_boolean('general', 'do_pdf_ingest'):        
         print("PDF INGEST")
         pdf_dir = config.get_string('general', 'pdf_ingest_directory')
         d = DoiDatabase()
         d.import_pdfs(pdf_dir, False)
 
+    # below line prints/logs lines such as 
+    # "Downloading Arthropod-Plant Interactions issn: 1872-8855 starting year: 2016 
+    # ending year 2016 Type: print" regardless of config.ini settings
     db = DoiDatabase(config.get_int('crossref', 'scan_for_dois_after_year'),
                      config.get_int('crossref', 'scan_for_dois_before_year'))
     if config.get_boolean('crossref', 'force_update'):
         print("CROSSREF FORCE INGEST")
 
         db.force_crossref_update(config.get_int('crossref', 'force_update_year'))
+
+        
     if config.get_boolean('general', 'report_on_start'):
         print("GENERATE DATABASE REPORT BEFORE START")
 
@@ -90,21 +135,26 @@ def setup():
         report = DatabaseReport(report_start_year, report_end_year, journal=None)
         logging.info(report.report())
         if config.get_boolean('general', 'exit_after_report'):
-            sys.exit(0)
+            raise SystemExit(0)
+            # above line used to be "sys.exit(0)", but it prevents sphinx autodoc from working
 
-    # joe tie to config
-    db.ensure_downloaded_has_pdf(2020, 2022)
 
     download_start_year = config.get_int('download', 'download_start_year')
     download_end_year = config.get_int('download', 'download_end_year')
 
+    if config.get_boolean('download', 'ensure_downloaded_has_pdf'):
+        print ("ENSURE THAT DOWNLOADED DOI ENTRIES HAVE ASSOCIATED PDF FILES")
+        db.ensure_downloaded_has_pdf(download_start_year, download_end_year)
+
+
     if config.get_boolean('download', 'download_single_journal'):
         print("DOWNLOAD SINGLE JOURNAL TEST MODE")
         db.download_dois(download_start_year, download_end_year,
-                       journal=config.get_string('download', 'download_single_journal_issn'))
+                       journal=None,
+                       issn=config.get_string('download', 'download_single_journal_issn'))
 
     if config.get_boolean('download', 'enable_paper_download'):
-        print ("DOWNLOADING PAPERS )e")
+        print ("DOWNLOADING PAPERS")
         db.download_dois_by_journal_size(download_start_year, download_end_year)
 
     if config.get_boolean('scan', 'enabled'):
@@ -123,6 +173,7 @@ def setup():
     validate_enabled = config.get_boolean('validate', 'enabled')
 
     if validate_enabled:
+
         validate_start_year = config.get_int('validate', 'validate_start_year')
         validate_end_year = config.get_int('validate', 'validate_end_year')
         validator = Validator()
@@ -160,7 +211,9 @@ def setup():
     #
     # test_known_good(db)
 
-    sys.exit(1)
+        return
+    # above line used to be "sys.exit(1)", but it prevents sphinx autodoc from working
+
 
 
 #  testing code - we generate a set of known good papers and test our algorithms against it.

@@ -12,7 +12,8 @@ class Config():
 
         if not exists(CONFIGFILE):
             print("Config file missing; copy config.temptate.ini to config.ini and customize.")
-            sys.exit(1)
+            return None
+            # above line used to be "sys.exit(1)", but it prevents sphinx autodoc from working
         else:
             self.config.read(CONFIGFILE)
 
