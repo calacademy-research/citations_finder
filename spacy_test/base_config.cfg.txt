@@ -66,6 +66,8 @@ max_length = 0
 [training]
 dev_corpus = "corpora.dev"
 train_corpus = "corpora.train"
+seed = 0
+gpu_allocator = null
 
 [training.optimizer]
 @optimizers = "Adam.v1"
