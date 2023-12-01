@@ -16,9 +16,10 @@ class Downloaders:
     def __init__(self):
         """First, remove any "unpaywall_cache". 
         Second, initialize an empty list "self.downloaders". 
-        Then, Loops over "modules = ["unpaywall_downloader"]", and 
+        Then, Loops over [dowbloaders] -> modules, and 
         split the text with "_", turn into camel case.  
-        Lastly, retrieve the attribute of "python_module", but use the camel case name
+        Lastly, creates instances of classes from those modules 
+        to populate the self.downloaders list
         """        
         if os.path.exists("unpaywall_cache"):
             os.remove("unpaywall_cache")
@@ -95,8 +96,8 @@ class Downloaders:
         for doi_entry in doi_list:
         # logging.warning(f"journal:{doi_entry.journal_title} not found: {doi_entry.not_found_count} doi: {doi_entry.doi}")
             if self.download(doi_entry):
-                doi_instance = DoiEntry(doi_entry)
-                doi_instance.mark_successful_download()
+                doi_entry.mark_successful_download()
+
 
 
     def download(self, doi_entry:DoiEntry):
@@ -124,6 +125,11 @@ class Downloaders:
         logging.info("==================================================================")
         logging.info(f"Attempting download: {datetime.now()}:{doi_entry.doi} journal: {doi_entry.get_journal()}")
         
+        #below line is performing download action
+        #the code iterates over each element (downloader) in this list and calls the download 
+        # method on each of them, passing doi_entry as an argument. If any of these downloaders 
+        # return True, indicating a successful download, the method returns True. Otherwise, 
+        # if none of the downloaders succeed, it returns False.
         for downloader in self.downloaders:
             if downloader.download(doi_entry):
                 return True
