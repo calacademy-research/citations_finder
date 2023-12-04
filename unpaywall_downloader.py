@@ -257,7 +257,7 @@ class UnpaywallDownloader(Downloader, Utils):
                     if self.most_recent_firefox_failure is not None and retry_firefox_failure is False:
                         logging.error("We have a firefox browser download failure; not retrying per config")
                         raise Exception
-                    firefox_result = self._firefox_downloader(self.open_url, doi_entry)
+                    firefox_result = self._firefox_downloader(self.open_url, doi_entry, self.PDF_DIRECTORY)
                     if firefox_result is False:
                         self.most_recent_firefox_failure = datetime.now()
                     download_result = firefox_result

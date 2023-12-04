@@ -209,7 +209,7 @@ class Downloader(ABC, Utils):
         :return: True if the file is successfully downlaoded and renamed, False otherwise.
         :rtype: bool
         """        
-        directory_issn_year_textname, latest_file = self.get_latest_downloaded_file(directory_issn_year)
+        directory_issn_year_textname = self.get_latest_downloaded_file(directory_issn_year)
         
         # Check if the file exists at the specified file path
         if os.path.exists(directory_issn_year_textname):
@@ -229,7 +229,7 @@ class Downloader(ABC, Utils):
             logging.error("Download unsuccessful. File not found. Returning failure. ")
             return False
 
-    def _firefox_downloader(self, url, doi_entry):
+    def _firefox_downloader(self, url, doi_entry,path):
         """Attempts to download a PDF file from the specified URL
         using the Firefox browser controlled by Selenium. It sets preferences for
         headless download and saves the file in a directory based on the ISSN and
@@ -248,7 +248,6 @@ class Downloader(ABC, Utils):
 
 
          #creating directory in which pdfs will be stored
-        path = self.config.get_string('downloaders', 'firefox_save_directory')
         directory_issn_year = os.path.join(path, doi_entry.issn, str(doi_entry.date.year))
         if not os.path.exists(directory_issn_year):
             print(f"Creating new PDF directory: {directory_issn_year}")
