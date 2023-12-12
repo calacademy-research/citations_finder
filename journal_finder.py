@@ -187,5 +187,5 @@ def printJournalList(url):
 
 if __name__ == '__main__':
     limit = 20
-    botany_url = f"https://api.gbif.org/v1/literature/search?contentType=literature&year=2021,%20%20%202022&literatureType=journal&gbifDatasetKey=f934f8e2-32ca-46a7-b2f8-b032a4740454&limit={limit}"
+    botany_url = f"`https://api.gbif.org/v1/literature/search?contentType=literature&year=2021,%20%20%202022&literatureType=journal&gbifDatasetKey=f934f8e2-32ca-46a7-b2f8-b032a4740454`&limit={limit}"
     printJournalList(botany_url)

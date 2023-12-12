@@ -1,8 +1,0 @@
-resourceGroupName='citations-group'
-vmName='citations-vm'
-location='westus'
-vmSize='Standard_DS2_v2' # 1 vCPU, 3.5 GB RAM
-image='Ubuntu2204'
-adminUsername='jrussack'
-adminPassword='i0$%LU4CFjMlbJ$!'
-diskSizeGB=128
