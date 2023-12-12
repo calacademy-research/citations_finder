@@ -1,0 +1,95 @@
+---
+- name: Clone repository, install rclone, create softlink, and conditionally copy DB
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Get the current user on the target machine
+      shell: whoami
+      register: whoami_output
+      become: no
+
+    - name: Set default user from the output of whoami
+      set_fact:
+        default_user: "{{ whoami_output.stdout }}"
+
+    - name: Check if citations_finder repository exists
+      stat:
+        path: '/opt/citations_finder/.git'
+      register: git_repo
+      become: no
+
+    - name: Clone citations_finder repository
+      git:
+        repo: 'https://github.com/calacademy-research/citations_finder'
+        dest: '/opt/citations_finder'
+      become: yes
+      when: not git_repo.stat.exists
+
+
+    - name: Change owner and group of the citations_finder
+      file:
+        path: '/opt/citations_finder'
+        owner: "{{ default_user }}"
+        group: "{{ default_user }}"
+        recurse: yes
+
+    - name: Download rclone
+      get_url:
+        url: 'https://downloads.rclone.org/rclone-current-linux-amd64.deb'
+        dest: '/tmp/rclone.deb'
+
+    - name: Install rclone
+      apt:
+        deb: '/tmp/rclone.deb'
+
+    - name: Create softlink to citations_finder in user's home directory
+      file:
+        src: '/opt/citations_finder'
+        dest: "/home/{{ default_user }}/citations_finder"
+        state: link
+        force: yes
+      become: no  # Run as the default user
+
+    - name: Check if doi_database.db exists locally
+      stat:
+        path: '../doi_database.db'
+      register: db_file_local
+      delegate_to: localhost
+      become: no
+
+    - name: Check if doi_database.db exists on target
+      stat:
+        path: '/opt/citations_finder/doi_database.db'
+      register: db_file_remote
+      become: no
+
+#    - name: Compress doi_database.db locally
+#      command: gzip -k -c ../doi_database.db > ./doi_database.db.gz
+#      delegate_to: localhost
+#      become: no
+#      when: db_file_local.stat.exists and not db_file_remote.stat.exists
+
+    - name: Copy  doi_database.db to target machine
+      copy:
+        src: '../doi_database.db'
+        dest: '/opt/citations_finder/doi_database.db'
+        owner: "{{ default_user }}"
+        group: "{{ default_user }}"
+      when: db_file_local.stat.exists and not db_file_remote.stat.exists
+      become: no
+
+#    - name: Remove local compressed doi_database.db
+#      file:
+#        path: './doi_database.db.gz'
+#        state: absent
+#      delegate_to: localhost
+#      become: no
+#      when: db_file_local.stat.exists and not db_file_remote.stat.exists
+
+#    - name: Decompress doi_database.db on target
+#      command: gzip -d /opt/citations_finder/doi_database.db.gz
+#      when: db_file_local.stat.exists and not db_file_remote.stat.exists
+#      become: yes
+
+
