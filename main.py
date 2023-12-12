@@ -121,6 +121,7 @@ def setup():
     # ending year 2016 Type: print" regardless of config.ini settings
     db = DoiDatabase(config.get_int('crossref', 'scan_for_dois_after_year'),
                      config.get_int('crossref', 'scan_for_dois_before_year'))
+    
     if config.get_boolean('crossref', 'force_update'):
         print("CROSSREF FORCE INGEST")
 
@@ -142,6 +143,7 @@ def setup():
     download_start_year = config.get_int('download', 'download_start_year')
     download_end_year = config.get_int('download', 'download_end_year')
 
+    #Checks if an DOI's associated PDF file exists, then updates the database
     if config.get_boolean('download', 'ensure_downloaded_has_pdf'):
         print ("ENSURE THAT DOWNLOADED DOI ENTRIES HAVE ASSOCIATED PDF FILES")
         db.ensure_downloaded_has_pdf(download_start_year, download_end_year)

@@ -57,13 +57,13 @@ class DoiEntry(Utils):
     # if json is populated
     # Valid setup_type: None, 'download_chunk', 'import_pdfs'
     def __init__(self, setup_type=None, doi_details=None):
-        """_summary_
+        """Initialize a DoiEntry object based on the provided setup type and DOI details.
 
-        :param setup_type: _description_, defaults to None
-        :type setup_type: _type_, optional
-        :param doi_details: _description_, defaults to None
-        :type doi_details: _type_, optional
-        :raises ValueError: _description_
+        :param setup_type: The type of setup to be performed ('download_chunk' or 'import_pdfs'), defaults to None.
+        :type setup_type: str, optional
+        :param doi_details: Details related to the DOI, defaults to None.
+        :type doi_details: dict, optional
+        :raises ValueError: Raised when an invalid setup_type is provided.
         """        
         super().__init__()
         if setup_type == None:
@@ -198,6 +198,12 @@ class DoiEntry(Utils):
         DBConnection.execute_query(sql_insert, args)
 
     def get_journal(self):
+        """Retrieve the title of the journal associated with this object.
+
+
+        :return: The title of the journal.
+        :rtype: str
+        """        
         return self.journal_title
 
     def _get_date_parent(self, id_string, details):
