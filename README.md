@@ -39,6 +39,11 @@ main.py
 # Steps
 
 config.ini contains initial configuration. An example config.ini is in config.template.ini.
+The only entrypoint is main.py - so 
+
+```#python3 ./main.py ```
+
+will start the program. What gets run is then controlled by the contents of config.ini.
 
 0. **General**:
 
