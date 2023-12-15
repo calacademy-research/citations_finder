@@ -137,7 +137,7 @@ class ScanDatabase(Utils):
             if results:
                 # logging.info(f"Title: {scan.title}")
                 for result in results:
-                    sql_insert = f"""insert into matched_specimen_ids (doi, identifier) VALUES (?,?)"""
+                    sql_insert = f"""insert into matched_specimen_ids (doi, identifier) VALUES (%s,%s)"""
                     result = result.strip()
                     if result.startswith("("):
                         result = result[1:]

@@ -170,7 +170,7 @@ class DoiDatabase(Utils):
             # the string to be included in the SQL query without causing issues.
             name = name.replace("'", "''")
             logging.info(f"{issn}\t{name}\t{type}")
-            sql = f"INSERT OR REPLACE INTO journals (issn,name, type,start_year,end_year) VALUES ('{issn}','{name}','{type}',{start_year},{date.today().year})"
+            sql = f"REPLACE INTO journals (issn,name, type,start_year,end_year) VALUES ('{issn}','{name}','{type}',{start_year},{date.today().year})"
 
             results = DBConnection.execute_query(sql)
 
@@ -360,13 +360,21 @@ class DoiDatabase(Utils):
         :type start_year: str
         :param end_year: The end year for filtering the data
         :type end_year: str
-        """        
-        base_url = f"https://api.crossref.org/journals/{issn}/works?filter=from-pub-date:{start_year},until-pub-date:{end_year}&rows=1000&cursor="
+        """
+        journal_url = f'https://api.crossref.org/journals/{issn}'
+        base_url = f"{journal_url}/works?filter=from-pub-date:{start_year},until-pub-date:{end_year}&rows=1000&cursor="
         cursor = "*"
         done = False
         total_items_processed = 0
         total_results = 0
         logging.info(f"Processing issn:{issn}")
+
+        response = requests.get(journal_url)
+
+        if response.status_code == 404 and response.text == "Resource not found.":
+            print(f"There is no crossref data for journal {issn}")
+            return
+
         while not done:
             try:
                 cursor, total_results, items_processed = self._download_chunk(base_url, cursor, start_year)

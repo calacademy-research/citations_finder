@@ -76,7 +76,7 @@ class Scan:
         """        
         if clear_existing_records:
             Scan.clear_db_entry(self.doi_string)
-        sql_insert = f"""replace into scans (doi, textfile_path,score,cannot_convert,title) VALUES (?,?,?,?,?)"""
+        sql_insert = f"""replace into scans (doi, textfile_path,score,cannot_convert,title) VALUES (%s,%s,%s,%s,%s)"""
         args = [self.doi_string,
                 self.textfile_path,
                 self.score,
@@ -85,7 +85,7 @@ class Scan:
         DBConnection.execute_query(sql_insert, args)
         if write_scan_lines and len(self.found_lines) > 0:
             for score_tuple in self.found_lines:
-                sql_insert = f"""insert into found_scan_lines (doi, line, score, matched_string) VALUES (?,?,?,?)"""
+                sql_insert = f"""insert into found_scan_lines (doi, line, score, matched_string) VALUES (%s,%s,%s,%s)"""
                 args = [self.doi_string,
                         score_tuple[0],
                         score_tuple[1],
@@ -200,7 +200,7 @@ class Scan:
             if len(test_string.split()) == 1:
                 all_name_variations.append((test_string, score))
                 continue
-            # Case 2: parsing full names with first, last, and middle 
+            # Case 2: parsing full names with first, last, and middle
             if len(test_string.split()) == 3:
                 firstname, middlename, lastname = test_string.split()
                 all_name_variations.append((f"{firstname} {middlename} {lastname}", score))

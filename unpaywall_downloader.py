@@ -68,7 +68,7 @@ class UnpaywallDownloader(Downloader, Utils):
         :type doi: str
         """        
 
-        sql = "INSERT OR REPLACE INTO unpaywall_downloader(doi, open_url, most_recent_attempt, most_recent_firefox_failure,error_code,not_available) VALUES(?,?,?,?,?,?)"
+        sql = "INSERT OR REPLACE INTO unpaywall_downloader(doi, open_url, most_recent_attempt, most_recent_firefox_failure,error_code,not_available) VALUES(%s,%s,%s,%s,%s,%s)"
         args = [doi, self.open_url, datetime.now(), self.most_recent_firefox_failure, self.error_code,self.not_available]
         DBConnection.execute_query(sql, args)
 

@@ -140,14 +140,18 @@ class DoiEntry(Utils):
         doi(primary key), issn, published_date, ournal_title,downloaded, details, full_path
         """        
         sql_create_database_table = """ CREATE TABLE IF NOT EXISTS dois (
-                                            doi text primary key NOT NULL,
-                                            issn text not null,
-                                            published_date date not null,
-                                            journal_title text not null,
-                                            downloaded boolean NOT NULL,
-                                            details data json,
-                                            full_path text
-                                        ); """
+                                          doi            text           not null  primary key,
+                                          issn           text           not null,
+                                          published_date date           not null,
+                                          journal_title  text           not null,
+                                          downloaded     tinyint(1)     not null,
+                                          details        text null,
+                                          full_path      text           null
+                                    );"""
+
+
+
+
         DBConnection.execute_query(sql_create_database_table)
 
     def update_database(self):
@@ -175,8 +179,6 @@ class DoiEntry(Utils):
         DBConnection.execute_query(sql_update, args)
 
     def insert_database(self):
-        # sql = "INSERT INTO customers (name, address) VALUES (%s, %s)"
-        # json_string = json.dumps(self.details)
         sql_insert = f"""insert into dois (doi,
                                             issn,
                                             published_date,
@@ -184,7 +186,7 @@ class DoiEntry(Utils):
                                             downloaded,
                                             full_path,
                                             details)
-                        VALUES (?,?,?,?,?,?,?)                
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)                
         """
 
         args = [self.doi,
@@ -194,7 +196,10 @@ class DoiEntry(Utils):
                 self.downloaded,
                 self.full_path,
                 json.dumps(self.details)]
+
+
         # logging.info(f"SQL insert {sql_insert}")
+        # logging.debug(f"Args: {args}")
         DBConnection.execute_query(sql_insert, args)
 
     def get_journal(self):

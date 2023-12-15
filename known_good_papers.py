@@ -79,7 +79,7 @@ class KnownGoodPapers():
                 if self._check_association_doi_exists(doi):
                     logging.info(f"DOI {doi} already inserted, continuing...")
                     return
-                sql_insert = f"INSERT INTO associations (doi, title) VALUES (?,?)"
+                sql_insert = f"INSERT INTO associations (doi, title) VALUES (%s, %s)"
                 args = [doi, title]
             else:
                 sql_insert = f"INSERT INTO associations (title) VALUES (?)"

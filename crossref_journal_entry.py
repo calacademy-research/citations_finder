@@ -16,7 +16,7 @@ class CrossrefJournalEntry():
         sql_insert = f"""INSERT INTO crossref_journal_data (doi,
                                             title,
                                             details)
-                               VALUES (?,?,?)
+                               VALUES (%s,%s,%s)
                                """
 
         args = [self.doi,

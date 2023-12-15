@@ -151,7 +151,7 @@ class Match(Utils):
         # DBConnection.execute_query(sql)
         if digital_only is not None:
             self.digital_only = digital_only
-        sql = f""" replace into matches (doi,collection,ignore,date_added,notes,digital_only) values (?,?,?,?,?,?)"""
+        sql = f""" replace into matches (doi,collection,ignore,date_added,notes,digital_only) values (%s,%s,%s,%s,%s,%s)"""
         args = [self.doi, collection, ignore, datetime.now(), self.notes, self.digital_only]
         DBConnection.execute_query(sql, args)
 
@@ -181,14 +181,17 @@ class Validator(Utils):
         if reset_matches_database:
             sql = "drop table matches"
             DBConnection.execute_query(sql)
-        sql_create_database_table = """ CREATE TABLE IF NOT EXISTS matches (
-                                                doi text primary key NOT NULL,
-                                                collection text,
-                                                ignore boolean,
-                                                date_added DATE,
-                                                notes text,
-                                                digital_only boolean
-                                            ); """
+        sql_create_database_table = """ create table if not exists matches
+                                        (
+                                            doi          text       not null
+                                                primary key,
+                                            collection   text       null,
+                                            `ignore`     tinyint(1) null,
+                                            date_added   date       null,
+                                            notes        text       null,
+                                            digital_only tinyint(1) null
+                                        ); """
+
 
         DBConnection.execute_query(sql_create_database_table)
 

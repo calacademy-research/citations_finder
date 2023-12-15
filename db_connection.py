@@ -1,13 +1,32 @@
-import sqlite3
 import logging
+import mysql.connector
+import yaml
+
 
 class DBConnector(object):
 
     def __init__(self):
         self.dbconn = None
+        self.db_config = self.read_db_config()
+
+    def read_db_config(self):
+        with open('./vm/vm_passwords.yml', 'r') as file:
+            config = yaml.safe_load(file)
+        return config
+
+    # def create_connection(self):
+    #     return sqlite3.connect('doi_database.db', timeout=30.0)
 
     def create_connection(self):
-        return sqlite3.connect('doi_database.db', timeout=30.0)
+        return mysql.connector.connect(
+            host=self.db_config['database_url'],
+            user=self.db_config['database_user'],  # Replace with your username
+            password=self.db_config['database_password'],
+
+            database=self.db_config['database_name'],  # Replace with your database name
+            port=self.db_config['database_port']
+        )
+
 
     # For explicitly opening database connection
     def __enter__(self):
@@ -32,13 +51,13 @@ class DBConnection(object):
     def execute_query(cls, query, args=None):
         """ Execute a SQL query on the database connection.
 
-        This code attempts to create a cursor object for the database connection. 
-        If an error occurs, such as a connection timeout, the code logs an error 
+        This code attempts to create a cursor object for the database connection.
+        If an error occurs, such as a connection timeout, the code logs an error
         message and creates a new connection before creating the cursor object again.
-        Then code executes the SQL query using the cursor object. 
-        If the args parameter is not None, it substitutes the parameter values into 
-        the query using placeholder variables. If an error occurs during the 
-        query execution, such as a syntax error in the SQL, the code logs a critical 
+        Then code executes the SQL query using the cursor object.
+        If the args parameter is not None, it substitutes the parameter values into
+        the query using placeholder variables. If an error occurs during the
+        query execution, such as a syntax error in the SQL, the code logs a critical
         error message and raises the error.
 
 
@@ -49,7 +68,7 @@ class DBConnection(object):
         :raises e: Raises an exception if there is an error executing the query
         :return: The result of the query execution
         :rtype: Any
-        """        
+        """
         connection = cls.get_connection()
         try:
             cursor = connection.cursor()
@@ -62,10 +81,15 @@ class DBConnection(object):
                 cursor.execute(query)
             else:
                 cursor.execute(query, args)
-            connection.commit()
+            if query.strip().upper().startswith("SELECT"):
+                result = cursor.fetchall()
+                return result  # Return results for SELECT queries
+            else:
+                connection.commit()  # Commit for INSERT, UPDATE, DELETE
         except Exception as e:
             logging.critical(f"Bad SQL: {e}:\n{query}")
             raise e
         result = cursor.fetchall()
         cursor.close()
         return result
+
