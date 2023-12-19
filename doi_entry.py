@@ -145,7 +145,7 @@ class DoiEntry(Utils):
                                           published_date date           not null,
                                           journal_title  text           not null,
                                           downloaded     tinyint(1)     not null,
-                                          details        text null,
+                                          details        mediumtext null,
                                           full_path      text           null
                                     );"""
 
@@ -195,7 +195,8 @@ class DoiEntry(Utils):
                 self.journal_title,
                 self.downloaded,
                 self.full_path,
-                json.dumps(self.details)]
+                json.dumps(self.details)
+                ]
 
 
         # logging.info(f"SQL insert {sql_insert}")

@@ -9,7 +9,9 @@ from db_connection import DBConnection
 from utils_mixin import Utils
 import time
 import logging
-#from headless_download import HeadlessDownload
+
+
+# from headless_download import HeadlessDownload
 
 class UnpaywallDownloader(Downloader, Utils):
 
@@ -23,7 +25,7 @@ class UnpaywallDownloader(Downloader, Utils):
 
         Note: The 'self' parameter refers to the instance of the 
         UnpaywallDownloader class being created.
-        """        
+        """
         super().__init__()
         self.open_url = None
         self.most_recent_firefox_failure = None
@@ -31,7 +33,6 @@ class UnpaywallDownloader(Downloader, Utils):
         self.error_code = None
         self.firefox_failure = None
         self.create_tables()
-
 
     @classmethod
     def create_tables(self):
@@ -43,7 +44,7 @@ class UnpaywallDownloader(Downloader, Utils):
         error code (error_code), and not available flag (not_available).
 
         The DOI column is set as the primary key to ensure uniqueness of DOI entries in the table.
-        """        
+        """
         sql_create_database_table = """ create table IF NOT EXISTS unpaywall_downloader
                                         (
                                             doi TEXT primary key,
@@ -66,17 +67,17 @@ class UnpaywallDownloader(Downloader, Utils):
 
         :param doi: The DOI for which the download information is to be updated in the database.
         :type doi: str
-        """        
+        """
 
         sql = "INSERT OR REPLACE INTO unpaywall_downloader(doi, open_url, most_recent_attempt, most_recent_firefox_failure,error_code,not_available) VALUES(%s,%s,%s,%s,%s,%s)"
-        args = [doi, self.open_url, datetime.now(), self.most_recent_firefox_failure, self.error_code,self.not_available]
+        args = [doi, self.open_url, datetime.now(), self.most_recent_firefox_failure, self.error_code,
+                self.not_available]
         DBConnection.execute_query(sql, args)
 
     def download(self, doi_entry):
-        """Attempts to download a DOI entry from Unpaywall based on the given 
-        DOI and the configuration settings. The method first retrieves the
-        most recent downloaddetails from the Unpaywall database for the provided 
-        DOI. If the DOI has been downloaded previously, it checks the 
+        """Attempts to download a DOI entry from Unpaywall. The method first retrieves the
+        most recent downloaddetails from the Unpaywall database for the provided
+        DOI. If the DOI has been downloaded, it checks the
         configuration settings to determine whether to retry the 
         download based on different conditions.
 
@@ -84,7 +85,7 @@ class UnpaywallDownloader(Downloader, Utils):
         :type doi_entry: DoiEntry
         :return: True if the download is successful, False otherwise.
         :rtype: bool
-        """        
+        """
         self.most_recent_firefox_failure = None
         self.open_url = None
         self.error_code = None
@@ -105,8 +106,7 @@ class UnpaywallDownloader(Downloader, Utils):
             self.error_code = results[0][3]
             self.not_available = results[0][4]
 
-
-        #if both force_update_link_only and populate_not_available_only are set to True and self.not_available has a value 
+        # if both force_update_link_only and populate_not_available_only are set to True and self.not_available has a value
         # in the database, then the download process should be aborted.
         if force_update_link_only and populate_not_available_only:
             if self.not_available is not None:
@@ -114,18 +114,18 @@ class UnpaywallDownloader(Downloader, Utils):
         # if self.error_code != 200:
         #     logging.warning("Will not retry - last attempt was not found")
 
-        # Checks whether retry_only_failures_with_link is True and whether self.open_url is not None.
-        # If both conditions are NOT met, it proceeds to check the result of self.meets_datetime_requrements('unpaywall_downloader', self.most_recent_attempt). 
-        # If this condition is also False(aka if 'retry_after_datetime' in config.ini is newer/more recent than the 
-        # last attempt date), it logs an informational message and returns False, indicating that the download 
-        # should not proceed because the download has been attempted too recently
+        # See config.ini.template for details -
+        # If there's no unpaywall info for this paper, won't requery unpaywall unless
+        # retry_only_failures_with_link is true. Also checks most recent download
+        # attempt so we don't bother if we have recent failures.
+
         retry_only_failures_with_link = self.config.get_boolean('unpaywall_downloader', 'retry_only_failures_with_link')
         if not (retry_only_failures_with_link and (self.open_url is not None)):
             if not self.meets_datetime_requrements('unpaywall_downloader', self.most_recent_attempt):
                 logging.info(
                     f"Attempted too recently; last attempt was {self.most_recent_attempt} cutoff is {self.config.get_string('unpaywall_downloader', 'retry_after_datetime')}")
                 return False
-            
+
         # Checks another configuration setting attempt_direct_link. If this setting is True, 
         # it attempts to download the resource using a direct link (self._download_link(doi_entry)).
         # If the direct download is successful (_download_link returns True), it updates doi_entry.downloaded to True, 
@@ -139,8 +139,7 @@ class UnpaywallDownloader(Downloader, Utils):
                 self._update_unpaywall_database(doi_entry.doi)
                 return True
 
-
-        # below results is True if the download is successful, False otherwise. Also performs 
+        # below results is True if the download is successful, False otherwise. Also performs
         # download action
         results = self._download_unpaywall(doi_entry)
         self._update_unpaywall_database(doi_entry.doi)
@@ -160,7 +159,7 @@ class UnpaywallDownloader(Downloader, Utils):
             :type doi_entry: DoiEntry
             :return: True if the download is successful, False otherwise.
             :rtype: bool
-        """        
+        """
         if 'link' in doi_entry.details:
             direct_link = doi_entry.details['link'][0]['URL']
         else:
@@ -183,14 +182,12 @@ class UnpaywallDownloader(Downloader, Utils):
         :raises Exception: Raises an exception if the download process encounters critical issues.
         :return: True if the download is successful, False otherwise.
         :rtype: bool
-        """        
+        """
         use_firefox_downloader = self.config.get_boolean('unpaywall_downloader', 'firefox_downloader')
         retry_firefox_failure = self.config.get_boolean('unpaywall_downloader', 'retry_firefox_failure')
         force_open_url_update = self.config.get_boolean('unpaywall_downloader', 'force_open_url_update')
         force_update_link_only = self.config.get_boolean('unpaywall_downloader', 'force_update_link_only')
         do_not_refetch_links = self.config.get_boolean('unpaywall_downloader', 'do_not_refetch_links')
-
-
 
         # if not headless_download:
         logging.info(f"Attempting unpaywall... @{datetime.now()}")
@@ -200,12 +197,12 @@ class UnpaywallDownloader(Downloader, Utils):
             email = self.config.get_string("downloaders", "header_email")
             UnpywallCredentials(email)
 
-            #marking download as failed (False) if do_not_refetch_links
+            # marking download as failed (False) if do_not_refetch_links
             if self.not_available == 1 and do_not_refetch_links:
                 logging.warning("Do not re-pull missing unpaywall links")
                 download_result = False
-            #===========================
-            #if url available, fetch url or reusing url from last pull
+            # ===========================
+            # if url available, fetch url or reusing url from last pull
             if self.open_url is None or force_open_url_update:
                 self.open_url = Unpywall.get_pdf_link(doi_entry.doi)
 
@@ -214,42 +211,39 @@ class UnpaywallDownloader(Downloader, Utils):
                 sleep_time = self.config.get_int('unpaywall_downloader', 're_used_direct_url_sleep_time')
                 if sleep_time > 0:
                     time.sleep(sleep_time)
-            #===========================
+            # ===========================
 
-            #===========================
-            #if url not availble, mark download as failed and not_available as True.
-            #if url available, mark not_available as False
+            # ===========================
+            # if url not availble, mark download as failed and not_available as True.
+            # if url available, mark not_available as False
             if self.open_url is None:
                 logging.info(f"Not available through unpaywall.")
                 self.not_available = True
                 download_result = False
             else:
                 self.not_available = False
-            #===========================
-
-
-
+            # ===========================
 
             if force_update_link_only:
                 download_result = False
-            
-            #===========================
-            #Sophia added if block here to prevent download from starting, if URL doesn't exist
+
+            # ===========================
+            # Sophia added if block here to prevent download from starting, if URL doesn't exist
             if self.not_available is True:
                 logging.info(f"Skipping download")
                 response = False
             else:
                 logging.info(
-                f"Attempting unpaywall download, URL: ({self.open_url}) will download to {doi_entry.generate_file_path()}")
-                #below line performs download function
+                    f"Attempting unpaywall download, URL: ({self.open_url}) will download to {doi_entry.generate_file_path()}")
+                # below line performs download function
                 response, self.error_code = self._download_url_to_pdf_bin(doi_entry, self.open_url, self.PDF_DIRECTORY)
-            #===========================
+            # ===========================
 
             if response:
                 download_result = True
-            
-            #added 403 below
-            if self.error_code == 503 or self.error_code ==403 or self.error_code ==429:
+
+            # added 403 below
+            if self.error_code == 503 or self.error_code == 403 or self.error_code == 429:
 
                 logging.info("Http error 403, 429 or 503, trying firefox selenium downloader, if enabled")
 
