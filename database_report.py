@@ -5,7 +5,8 @@ from db_connection import DBConnection
 class DatabaseReport:
     categories = ['downloaded', 'missing', 'total']
 
-    def __init__(self, start_year=None, end_year=None, journal=None):
+    def __init__(self, doi_database, start_year=None, end_year=None, journal=None):
+        self.doi_database = doi_database
         self.good_download_count = 0
         self.start_year = start_year
         self.end_year = end_year
@@ -55,7 +56,7 @@ class DatabaseReport:
         if journal is not None:
             select_dois += f' and journal_title="{journal}"'
 
-        doif = DoiFactory(select_dois)
+        doif = DoiFactory(self.doi_database,select_dois)
         self.dois = doif.dois
 
     def _get_journals(self):
@@ -192,7 +193,10 @@ class DatabaseReport:
             # Downloaded, missing, total
             for statname, stat in stats.items():
                 row.append(stat)
-            percent = open_link_num / stats['total'] * 100
+            if stats['total'] > 0:
+                percent = open_link_num / stats['total'] * 100
+            else:
+                percent = 0
             # %open
             row.append(f"{percent:.0f}%")
             # %got (downloaded)

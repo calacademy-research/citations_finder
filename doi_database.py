@@ -16,6 +16,8 @@ from database_report import DatabaseReport
 from downloaders import Downloaders
 from scan_database import ScanDatabase
 from validator import Validator
+import json
+from datetime import datetime
 
 from datetime import date
 import logging
@@ -36,9 +38,11 @@ class DoiDatabase(Utils):
     # "do_download" scans through all DOI records. If the PDF is already
     # downloaded, it populates the record accordingly.
     def __init__(self,
+                 config,
                  start_year=None,
                  end_year=None):
         super().__init__()
+        self.config = config
 
         self._setup()
         if start_year is not None:
@@ -53,22 +57,28 @@ class DoiDatabase(Utils):
         ScanDatabase.create_tables()
         Validator.create_tables()
 
+    def _print_journal_actions(self, issn, check_year, journal, type):
+        """Prints the intended actions for a journal record."""
 
-    def _query_journals(self, start_year, end_year):
-        """Queries crossref for the history of the journal in question.
-        Crossref returns all records starting at the start_year until the 
-        most recent year. Both are defined in config.ini -> [crossref] ->
-        'scan_for_dois_after_year' AND 'scan_for_dois_before_year'
+        if self._is_year_downloaded(issn, check_year):
+            logging.info(f"Will require download: {issn}, year: {check_year}, journal: {journal}, type: {type}")
+        else:
+            logging.info(f"  Already downloaded: {issn}, year: {check_year}, journal: {journal}, type: {type}")
 
-        Updates the table "journals" with the "start year" and "end_year" 
-        passed in here. Journals table doesn't get an 
-        entry until an attempt to query DOIs from crossref has happened.
 
-        :param start_year: Start year of journal
-        :type start_year: int
-        :param end_year: End year of journal
-        :type end_year: int
-        """        
+    def _execute_journal_actions(self, issn, check_year, journal, type):
+        """Executes the actions for a journal record."""
+
+        if not self._is_year_downloaded(issn, check_year):
+            logging.info(f"Downloading {journal} issn: {issn} year: {check_year}")
+            if type is None:
+                logging.info("")
+            else:
+                logging.info(f" Type: {type}")
+            self.download_issn(issn, check_year, check_year)
+            self._update_journal_record(issn, journal, type)
+
+    def _query_journals_tsv(self, start_year, end_year, operation):
         with open('journals.tsv', 'r') as tsvin:
             for line in csv.reader(tsvin, delimiter='\t'):
                 try:
@@ -86,15 +96,39 @@ class DoiDatabase(Utils):
                     logging.warning(f"Parsing error: {line}, skipping.")
                     continue
 
-                logging.info(f"Downloading {journal} issn: {issn} starting year: {start_year} ending year {end_year}")
-                if type is None:
-                    logging.info("")
-                else:
-                    logging.info(f" Type: {type}")
+                for year in range(start_year, end_year + 1):
+                    check_year = str(year)
+                    operation(issn, check_year, journal, type)
 
-                if self._check_journal_record(issn, start_year):
-                    self.download_issn(issn, start_year, end_year)
-                    self._update_journal_record(issn, start_year, journal, type)
+
+    def _query_journals(self, start_year, end_year):
+        """Queries crossref for the history of the journal in question.
+        Crossref returns all records starting at the start_year until the 
+        most recent year. Both are defined in config.ini -> [crossref] ->
+        'scan_for_dois_after_year' AND 'scan_for_dois_before_year'
+
+        Updates the table "journals" with the "start year" and "end_year" 
+        passed in here. Journals table doesn't get an 
+        entry until an attempt to query DOIs from crossref has happened.
+
+        :param start_year: Start year of journal
+        :type start_year: int
+        :param end_year: End year of journal
+        :type end_year: int
+        """
+        skip_crossref = self.config.get_boolean('crossref', 'skip_crossref')
+        if skip_crossref:
+            logging.info("Skipping crossref check and download step...")
+            return
+        skip_crossref_precheck = self.config.get_boolean('crossref', 'skip_crossref_precheck')
+
+        if not skip_crossref_precheck:
+            self._query_journals_tsv(start_year,end_year, self._print_journal_actions)
+        self._query_journals_tsv(start_year,end_year, self._execute_journal_actions)
+
+                # if self._check_journal_record(issn, start_year):
+                #     self.download_issn(issn, start_year, end_year)
+                #     self._update_journal_record(issn, start_year, journal, type)
 
     def force_crossref_update(self, start_year):
         """ Retrieves journals from the database and performs a forced update
@@ -113,106 +147,47 @@ class DoiDatabase(Utils):
             name = journal[1]
             type = journal[2]
             self.download_issn(issn, start_year, end_year)
-            self._update_journal_record(issn, start_year, name, type)
+            self._update_journal_record(issn, name, type)
 
-    def _get_issn_oldest_year(self, issn):
-        """In 'journals' table in database, each issn # / journal name 
-        has a start_year and end_year assigned. This method 
-        retrieves the start_year value by SQL query
+    def _is_year_downloaded(self, issn, year):
+        """Check if there are any DOI entries for the given ISSN in the specified year.
+        If so, we assume the entire year is downloded.
 
-        :param issn: issn number
+        :param issn: ISSN number.
         :type issn: str
-        :return: The start_year of issn # / journal name 
-        :rtype: int
-        """        
-        query = f"select start_year from journals where issn=\"{issn}\""
-        results = DBConnection.execute_query(query)
-
-        if len(results) >= 1:
-            return int(results[0][0])
-        else:
-            return None
-
-    def _check_journal_record(self, issn, start_year):
-        """Returns True if the journal needs to be downloaded
-
-        :param issn: ISSN number
-        :type issn: str
-        :param start_year: The start year of the journal
-        :type start_year: int
-        :return: True if journal needs to be downloaded (when old_year_downloaded
-        on record is more recent than passed start_year)
+        :param year: Year to check for DOI entries.
+        :type year: int
+        :return: True if there are DOI entries in the specified year, False otherwise.
         :rtype: bool
         """
-        oldest_year_downloaded = self._get_issn_oldest_year(issn)
-        if oldest_year_downloaded is None or (oldest_year_downloaded > start_year):
-            return True
-        return False
+        query = f"""
+        SELECT COUNT(*) FROM collections_papers.dois
+        WHERE issn = \"{issn}\" AND YEAR(published_date) = {year}
+        """
+        results = DBConnection.execute_query(query)
 
-    def _update_journal_record(self, issn, start_year, name, type):
-        """Update or insert a line in the database -> 'journals' table, 
-        with new start_year, if previous_start_year is None or is more recent(greater) 
-        than new start_year
+        if len(results) >= 1 and results[0][0] > 0:
+            return True
+        else:
+            return False
+
+    def _update_journal_record(self, issn, name, type):
+        """
+        ensure journal record is present in the database
 
         :param issn: ISSN number
         :type issn: str
-        :param start_year: The start year of the journal
-        :type start_year: int
         :param name: The name of the journal
         :type name: str
         :param type: the type of the journal, either 'online' or 'print'
         :type type: str
-        """        
-        previous_start_year = self._get_issn_oldest_year(issn)
-        if previous_start_year is None or previous_start_year > start_year:
-            # Below line "escapes the quotes". In SQL, single quotes are used to 
-            # enclose string values in SQL queries. "Escaping quotes" allowing 
-            # the string to be included in the SQL query without causing issues.
-            name = name.replace("'", "''")
-            logging.info(f"{issn}\t{name}\t{type}")
-            sql = f"REPLACE INTO journals (issn,name, type,start_year,end_year) VALUES ('{issn}','{name}','{type}',{start_year},{date.today().year})"
+        """
+        name = name.replace("'", "''")
+        logging.info(f"{issn}\t{name}\t{type}")
+        sql = f"REPLACE INTO journals (issn,name, type) VALUES ('{issn}','{name}','{type}')"
 
-            results = DBConnection.execute_query(sql)
+        results = DBConnection.execute_query(sql)
 
-    # not referenced anywhere at present; invoke from main per README
-
-    # Scans through existing PDFs in the directory
-    # If they're present, create or update the DoiEntry
-    # in the database.
-
-    # Inefficent; single request to crossref.org to get metadata for one pub.
-    # it's better to run download_issn for the journal of interest and the run
-    # import_pdfs. If the pdfs are of unknown or mixed provenance, then this
-    # is the way to go.
-
-    def import_pdfs(self, directory="./", raise_exception_if_exist=True):
-        """ Import PDFs and build database entries based on their metadata.
-
-        :param directory: The directory path where the PDF files are located, defaults to "./"
-        :type directory: str, optional
-
-        :param raise_exception_if_exist: Flag indicating whether to raise an exception if the DOI already exists in the database, defaults to True
-        :type raise_exception_if_exist: bool, optional
-        """        
-        pdf_files = glob.glob(os.path.join(directory, "*.pdf"))
-        total_count = 0
-        for pdf_file in pdf_files:
-            doi_string = self.get_doi_from_path(pdf_file)
-            base_url = f"https://api.crossref.org/works/{doi_string}"
-
-            logging.info(f"Querying crossref.org for metadata to build db: {base_url}")
-            results = self._get_url_(base_url)
-            item = results['message']
-            if raise_exception_if_exist:
-                DoiEntry('import_pdfs', item)
-            else:
-                try:
-                    DoiEntry('import_pdfs', item)
-                except EntryExistsException as e:
-                    logging.info(f"DOI already in database, skipping: {e}")
-            total_count += 1
-            if total_count % 10 == 0:
-                logging.info(f"Done {total_count} out of {len(pdf_files)}")
 
     def download_dois_by_journal_size(self,
                                     start_year,
@@ -226,20 +201,21 @@ class DoiDatabase(Utils):
         :type start_year: int
         :param end_year: The end year for the time range to consider.
         :type end_year: int
-        """        
-        sql = f'''SELECT journal_title,issn,count(doi)
-                FROM dois
-                where {self.sql_year_restriction(start_year, end_year)}
-                and downloaded = False 
-                GROUP BY journal_title
-                ORDER BY COUNT(doi) ASC'''
+        """
+
+        sql = f'''SELECT journal_title, issn, count(doi)
+                  FROM dois
+                  WHERE {self.sql_year_restriction(start_year, end_year)}
+                  AND downloaded = False
+                  GROUP BY journal_title, issn
+                  ORDER BY COUNT(doi) ASC'''
 
         journals = DBConnection.execute_query(sql)
         for journal, issn, doi_count in journals:
             # journal = journal[0]
             # issn = journal[1]
             logging.info(f"Attempting downloads for journal: {journal}:{issn}")
-            report = DatabaseReport(start_year, end_year, journal)
+            report = DatabaseReport(self, start_year, end_year, journal)
             logging.info("\n")
             logging.info(report.report(journal=journal, issn=issn, summary=False))
             self.download_dois(start_year, end_year, journal=journal, issn=issn)
@@ -293,7 +269,7 @@ class DoiDatabase(Utils):
             raise FileNotFoundError(f"No such doi: {doi} or multiple results")
         return doi[0]
 
-    def ensure_downloaded_has_pdf(self, start_year, end_year):
+    def update_doi_pdf_downloded_status(self, start_year, end_year):
         """Checks if an DOI's associated PDF file exists, then updates the database
 
         :param start_year: The starting year of the date range.
@@ -334,7 +310,7 @@ class DoiDatabase(Utils):
         select_dois = self._generate_select_sql(start_year, end_year, issn)
         downloaders = Downloaders()
 
-        doif = DoiFactory(select_dois)
+        doif = DoiFactory(self, select_dois)
         dois = doif.dois
         logging.info(f"SQL: {select_dois}")
         logging.info(f"  Pending download count: {len(dois)}")
@@ -350,7 +326,9 @@ class DoiDatabase(Utils):
 
     def download_issn(self, issn, start_year, end_year):
         """    Download data for a specific ISSN from a given start year to an end year
-        using crossref API. The downloaded data is not explicitly stored or saved to a 
+        using crossref API. This is "dumb"; it will re-download all years regardless
+        of whether they have been downloaded before.
+        The downloaded data is not explicitly stored or saved to a
         specific location.
 
 
@@ -416,13 +394,10 @@ class DoiDatabase(Utils):
         return self._download_chunk(url, cursor, start_year, retries)
 
     def _download_chunk(self, url, cursor, start_year, retries=0):
-        """First, download data using url and store in 'results'. From results, get 'message', 
-        'items', and 'total-results'.
-        Second, loop through all items. If item type is 'journal', run CrossrefJournalEntry. 
-        Else if item type is 'journal-article", run DoiEntry. If item type is anything else, pass for now.
-        Third, check number of items. If no items, raise ConnectionError exception. If there are items, 
-        logs a message indicating the number of items processed.
-        Lastly, return the tuple consisted of 'message['next-cursor'], total_results, items_processed'
+        """
+        Downloads a chuck of DOIS from crossref. Creates a crossref journal entry for
+        journals or a DOI for papers and stores it in the database if there isn't
+        already a database entry there.
 
         :param url: The URL (crossref api) to download the data from
         :type url: str
@@ -476,3 +451,72 @@ class DoiDatabase(Utils):
         else:
             logging.info(f"Processed {len(items)} items")
         return message['next-cursor'], total_results, items_processed
+
+    # Not used, not yet tested, but potentially handy nonetheless. Delete
+    # if not used after major revisions.
+    def _get_single_doi(self, doi):
+        """
+        Get details for a single DOI from Crossref and return data formatted for database insertion.
+
+        :param doi: The DOI for which to retrieve details.
+        :type doi: str
+        :return: A dictionary with keys matching the database columns.
+        :rtype: dict
+        """
+        try:
+            response = requests.get(f"{self.base_url}{doi}")
+            response.raise_for_status()
+            data = response.json()
+
+            # Extracting relevant fields from the response
+            item = data['message']
+            doi = item.get('DOI', '')
+            issn = item.get('ISSN', [''])[0] if item.get('ISSN') else ''
+            published_date = item.get('created', {}).get('date-time', '')
+            journal_title = item.get('container-title', [''])[0] if item.get('container-title') else ''
+            downloaded = 0  # or 1 depending on your download logic
+            details = json.dumps(item)
+            full_path = ''  # Depends on your file storage logic
+
+            # Formatting the published date
+            if published_date:
+                published_date = datetime.fromisoformat(published_date).date()
+
+            return {
+                'doi': doi,
+                'issn': issn,
+                'published_date': published_date,
+                'journal_title': journal_title,
+                'downloaded': downloaded,
+                'details': details,
+                'full_path': full_path
+            }
+
+        except requests.RequestException as e:
+            print(f"Error fetching details for DOI {doi}: {e}")
+            return {}
+
+
+    def write_journals_to_tsv(self, output_file):
+        # SQL query to select journals that have at least one corresponding DOI in the dois table
+        query = """
+        SELECT j.issn, j.name, j.type 
+        FROM collections_papers.journals j
+        WHERE EXISTS (
+            SELECT 1 FROM collections_papers.dois d
+            WHERE d.issn = j.issn
+        )
+        """
+        journal_data = DBConnection.execute_query(query)
+
+        # Check if there is any journal data to write
+        if journal_data:
+            # Open a file to write
+            with open(output_file, 'w', newline='') as file:
+                writer = csv.writer(file, delimiter='\t')
+
+                # Write each row from the database to the TSV file
+                for row in journal_data:
+                    writer.writerow(row)
+        else:
+            print("No journals with corresponding DOIs found.")

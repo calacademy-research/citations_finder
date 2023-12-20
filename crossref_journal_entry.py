@@ -52,9 +52,7 @@ class CrossrefJournalEntry():
         sql_create_database_table = """ CREATE TABLE IF NOT EXISTS journals (
                                             issn text primary key NOT NULL,
                                             name text,
-                                            type text,
-                                            start_year INT,
-                                            end_year INT
+                                            type text
                                         ); """
         DBConnection.execute_query(sql_create_database_table)
         sql_create_database_table = """create table if not exists crossref_journal_data

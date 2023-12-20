@@ -20,7 +20,7 @@ headers = {
 class DoiFactory:
     # TODO: Odd and bad that there are two ways to set up DoiEntry objects. We should use
     # one or the other and enforce it, or at the very least clarify the two cases in comments.
-    def __init__(self, sql):
+    def __init__(self, doi_database, sql):
         """Initialize an object of the class by executing query, extract the fields from 
         query results, create a new DoiEntry object, populate the DoiEntry object with
         the extracted data, add the new DoiEntry object to the results list, and set the 
@@ -28,7 +28,8 @@ class DoiFactory:
 
         :param sql: The SQL query to fetch DOI-related data.
         :type sql: str
-        """        
+        """
+        #  TODO: All this junk probably belongs in doi_database.
         doi_sql_results = DBConnection.execute_query(sql)
 
         results = []
@@ -42,7 +43,15 @@ class DoiFactory:
 
             new_doi = DoiEntry()
 
-            new_doi.details = json.loads(details)
+            try:
+                new_doi.details = json.loads(details)
+            except json.JSONDecodeError:
+                # Handle JSON parsing error
+                print(f"Invalid JSON, skipping and removing DOI: {doi}: {details}")
+                sql_delete = "DELETE FROM dois WHERE doi = %s"
+                params = [doi]
+                DBConnection.execute_query(sql_delete, params)
+                continue
             new_doi.doi = doi
             new_doi.issn = issn
             new_doi.date = new_doi.get_date()
@@ -58,12 +67,15 @@ class DoiEntry(Utils):
     # Valid setup_type: None, 'download_chunk', 'import_pdfs'
     def __init__(self, setup_type=None, doi_details=None):
         """Initialize a DoiEntry object based on the provided setup type and DOI details.
+        Will not create a new entry if one already exists, will raise EntityExistsException
 
         :param setup_type: The type of setup to be performed ('download_chunk' or 'import_pdfs'), defaults to None.
         :type setup_type: str, optional
         :param doi_details: Details related to the DOI, defaults to None.
         :type doi_details: dict, optional
         :raises ValueError: Raised when an invalid setup_type is provided.
+        :raises EntityExistsException: Raised when an attempt is made to create a duplicate entry
+
         """        
         super().__init__()
         if setup_type == None:
@@ -78,26 +90,26 @@ class DoiEntry(Utils):
             self.full_path = self.generate_file_path()
         else:
             raise ValueError(f"DoiEntry __init__: Invalid setup_type '{setup_type}'")
-
         self.insert_database()
 
+
     def _setup(self, doi_details):
-   
-        """Sets up the object and 
+
+        """Sets up the object and
         checks if DOI is of type "journal-article". If it's not, raise errors.
 
         :param doi_details: decoded json results of DOI from crossref.org
         :type doi_details: dict
 
-        :raises EntryExistsException: If the length of the DOI string 
+        :raises EntryExistsException: If the length of the DOI string
             in the database is greater than or equal to 1.
         :raises TypeError: if DOI is of type 'journal'.
         :raises TypeError: if DOI is not of type 'journal-article'.
-        """        
+        """
         self.issn = doi_details['ISSN'][0]
         self.doi = doi_details['DOI']
         self.details = doi_details
-         # should be duplicate of ISSN reference, but we'll leave it for now
+        # should be duplicate of ISSN reference, but we'll leave it for now
         self.journal_title = doi_details['container-title'][0]
         # logging.info(f"attempting DOI with New date: {self.get_date()}")
 
@@ -108,7 +120,6 @@ class DoiEntry(Utils):
             raise TypeError("DOI type is 'journal', not 'journal-article'.")
         if doi_details['type'] != "journal-article":
             raise TypeError(f"DOI type is '{doi_details['type']}', not 'journal-article'.")
-
 
     def mark_successful_download(self):
         """Sets the 'downloaded' attribute to True, 
@@ -160,18 +171,30 @@ class DoiEntry(Utils):
         """        
 
         # json_string = json.dumps(self.details)
-        sql_update = f"""update dois set issn=?,
-                                                   published_date=?,
-                                                   journal_title=?,
-                                                   downloaded=?,
-                                                   full_path=?,
-                                                   details=?
-                        where doi = "{self.doi}"             
-               """
+        # sql_update = f"""update dois set issn=?,
+        #                                            published_date=?,
+        #                                            journal_title=?,
+        #                                            downloaded=?,
+        #                                            full_path=?,
+        #                                            details=?
+        #                 where doi = "{self.doi}"
+        #        """
+
+        sql_update = f"""
+            UPDATE dois SET 
+                issn = %s,
+                published_date = %s,
+                journal_title = %s,
+                downloaded = %s,
+                full_path = %s,
+                details = %s
+            WHERE doi = "{self.doi}"
+        """
+
         args = [self.issn,
                 self.date,
                 self.journal_title,
-                self.downloaded,
+                self.downloaded,  # Convert boolean to 1 or 0
                 self.full_path,
 
                 json.dumps(self.details)]
@@ -193,7 +216,7 @@ class DoiEntry(Utils):
                 self.issn,
                 self.date,
                 self.journal_title,
-                self.downloaded,
+                self.downloaded,  # Convert boolean to 1 or 0
                 self.full_path,
                 json.dumps(self.details)
                 ]
@@ -269,8 +292,8 @@ class DoiEntry(Utils):
 
     def check_file(self, path=None):
         """Check whether designated file already exists in path. If so, 
-        return True and update database. If otherwise, return False and 
-        update database.
+        return True and update self. If otherwise, return False and
+        update self.
 
         :param path: path to check for file existence, defaults to None
         :type path: str, optional
@@ -284,7 +307,7 @@ class DoiEntry(Utils):
             return True
         else:
             self.downloaded = False
-        return False
+            return False
 
     def get_doi_date_string(self, item):
         if 'created' in item:

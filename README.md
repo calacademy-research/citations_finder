@@ -149,6 +149,10 @@ Currently only tested on mac. create a virtual environment using the requirement
 
 * archive.org downloader (may be subsumed in unpaywall.org)
 
+* start_year and end_year are useful in journals but they're also may be being used in some cases
+  to determine if dois are downloaded. Audit the usage of journals start_year and end_year 
+  to ensure they're not overgeneralized.
+
 * unpaywall_downloader:  "download_link" doesn't work very well. Most of the time this links to an
   html version of the paper. Currently only handles direct-to-PDF links. However, it's hard to tell the
   differnce between an html-ified paper and a "can't find" or a ddos protection page. Possible solutions:

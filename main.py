@@ -42,6 +42,7 @@ def download_single_doi(doi, config):
         downloaders.download(doi_entry)
 
 
+
 def retry_failed_unpaywall_links(config):
     """Retry failed unpaywall downloads for DOIs. 
     
@@ -83,7 +84,7 @@ def setup_tables():
 # TODO: some missing pdfs are marked as downloaded, we need a cross check step to mark
 # missing as missing.
 def setup():
-    """This is the main function being ran.
+    """This is the main function
     
     Reads the configuration settings and executes 
     different blocks of code based on the configuration option.
@@ -109,19 +110,18 @@ def setup():
         retry_failed_unpaywall_links(config)
         return None
         # above line used to be "sys.exit(0)", but it prevents sphinx autodoc from working
-    
-    if config.get_boolean('general', 'do_pdf_ingest'):        
-        print("PDF INGEST")
-        pdf_dir = config.get_string('general', 'pdf_ingest_directory')
-        d = DoiDatabase()
-        d.import_pdfs(pdf_dir, False)
+
+
 
     # below line prints/logs lines such as 
     # "Downloading Arthropod-Plant Interactions issn: 1872-8855 starting year: 2016 
     # ending year 2016 Type: print" regardless of config.ini settings
-    db = DoiDatabase(config.get_int('crossref', 'scan_for_dois_after_year'),
+    db = DoiDatabase(config,
+                     config.get_int('crossref', 'scan_for_dois_after_year'),
                      config.get_int('crossref', 'scan_for_dois_before_year'))
-    
+    if config.get_boolean('general','write_used_journals'):
+        print("Writing to journals table")
+        db.write_journals_to_tsv(config('general','used_journals_only_file'))
     if config.get_boolean('crossref', 'force_update'):
         print("CROSSREF FORCE INGEST")
 
@@ -133,7 +133,7 @@ def setup():
 
         report_start_year = config.get_int('general', 'report_start_year')
         report_end_year = config.get_int('general', 'report_end_year')
-        report = DatabaseReport(report_start_year, report_end_year, journal=None)
+        report = DatabaseReport(db, report_start_year, report_end_year, journal=None)
         logging.info(report.report())
         if config.get_boolean('general', 'exit_after_report'):
             raise SystemExit(0)
@@ -144,9 +144,9 @@ def setup():
     download_end_year = config.get_int('download', 'download_end_year')
 
     #Checks if an DOI's associated PDF file exists, then updates the database
-    if config.get_boolean('download', 'ensure_downloaded_has_pdf'):
-        print ("ENSURE THAT DOWNLOADED DOI ENTRIES HAVE ASSOCIATED PDF FILES")
-        db.ensure_downloaded_has_pdf(download_start_year, download_end_year)
+    if config.get_boolean('download', 'updatate_pdf_file_link'):
+        print ("Verifying PDF files against doi database and updating all records - this is slow!")
+        db.update_doi_pdf_downloded_status(download_start_year, download_end_year)
 
 
     if config.get_boolean('download', 'download_single_journal'):
