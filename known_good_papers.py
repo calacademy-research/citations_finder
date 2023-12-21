@@ -91,8 +91,8 @@ class KnownGoodPapers():
 
     def _create_association_table(self):
         sql_create_database_table = """ CREATE TABLE IF NOT EXISTS associations (
-                                            doi text,
-                                            title text NOT NULL
+                                            doi varchar(255) NOT NULL,
+                                            title varchar(8192) NOT NULL
                                         ); """
         DBConnection.execute_query(sql_create_database_table)
 

@@ -56,7 +56,7 @@ class DatabaseReport:
         if journal is not None:
             select_dois += f' and journal_title="{journal}"'
 
-        doif = DoiFactory(self.doi_database,select_dois)
+        doif = DoiFactory(select_dois)
         self.dois = doif.dois
 
     def _get_journals(self):

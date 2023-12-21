@@ -220,34 +220,44 @@ class DoiDatabase(Utils):
             logging.info(report.report(journal=journal, issn=issn, summary=False))
             self.download_dois(start_year, end_year, journal=journal, issn=issn)
 
-    def _generate_select_sql(self, start_year, end_year, journal_issn, downloaded="FALSE"):
-        """Generate an SQL query to select DOI entries from the database -> dois table
+    def _generate_select_sql(self, start_year, end_year, journal_issn, downloaded):
+        """Generate an SQL query to select DOI entries from the database -> dois table.
 
         :param start_year: The starting year of the date range for DOI entries selection.
         :type start_year: int
         :param end_year: The ending year of the date range for DOI entries selection.
         :type end_year: int
         :param journal_issn: The ISSN (International Standard Serial Number) of the journal
-        for DOI entries filtering.
+                             for DOI entries filtering.
         :type journal_issn: str
-        :param downloaded: The downloaded status to be used in the selection criteria,
-        defaults to "FALSE".
-        :type downloaded: str, optional
+        :param downloaded: The downloaded status to be used in the selection criteria.
+                           Can be True, False, or None. If None, the downloaded status
+                           is not included in the criteria.
+        :type downloaded: bool or None
         :return: The SQL query for selecting DOI entries based on the provided criteria.
         :rtype: str
-        """        
-        select_dois = f"""select * from dois where downloaded={downloaded} """
+        """
+        conditions = []
+
+        if downloaded is not None:
+            downloaded_value = "TRUE" if downloaded else "FALSE"
+            conditions.append(f"downloaded = {downloaded_value}")
 
         if start_year is not None and end_year is not None:
-            select_dois += f""" and  {self.sql_year_restriction(start_year, end_year)}"""
+            conditions.append(self.sql_year_restriction(start_year, end_year))
+
         if journal_issn is not None:
-            select_dois += f' and issn="{journal_issn}"'
+            conditions.append(f'issn = "{journal_issn}"')
+
+        where_clause = " where " + " and ".join(conditions) if conditions else ""
+
+        select_dois = f"select * from dois{where_clause}"
+
         return select_dois
 
-    def get_dois(self, start_year, end_year, journal_issn=None):
-        """Get DOI entries from the database where downloaded column is marked as True
-          within the specified date range
-
+    def get_dois(self, start_year, end_year, journal_issn=None, downloaded=True):
+        """Get DOI entries from the database within the specified date range
+         downloaded can be true, false, or none. Clause will be removed in the "none" case.
 
         :param start_year: The starting year of the date range.
         :type start_year: int
@@ -257,8 +267,9 @@ class DoiDatabase(Utils):
         :type journal_issn: str, optional
         :return: A list of DOI entries that match the specified criteria.
         :rtype: List[DoiEntry]
-        """        
-        sql = self._generate_select_sql(start_year, end_year, journal_issn, "TRUE")
+        """
+
+        sql = self._generate_select_sql(start_year, end_year, journal_issn, downloaded)
         dois = DoiFactory(sql).dois
         return dois
 
@@ -277,11 +288,15 @@ class DoiDatabase(Utils):
         :param end_year: The ending year of the date range.
         :type end_year: int
         """        
-        dois = self.get_dois(start_year, end_year)
-        for doi_entry in dois:
-            doi_entry_instance = DoiEntry(doi_entry)
-            doi_entry_instance.check_file()
-            doi_entry_instance.update_database()
+        dois = self.get_dois(start_year, end_year, downloaded=None)
+        total_dois = len(dois)
+        logging.info(f"Checking paths for {total_dois} DOIs... ")
+
+        for index, doi_entry in enumerate(dois, start=1):
+            if index % 1000 == 0 or index == total_dois:
+                logging.info(f"Processed {index}/{total_dois} DOIs.")
+            if doi_entry.check_file():
+                doi_entry.update_database()
 
     # Ensures that all DOIs in the database have associated files
     # Download, if not.
@@ -307,10 +322,10 @@ class DoiDatabase(Utils):
         :param issn: The ISSN (International Standard Serial Number) used as a filter for DOI entries. If True, the ISSN will be used to filter DOI entries; if False, it will not be used for filtering.
         :type issn: bool
         """        
-        select_dois = self._generate_select_sql(start_year, end_year, issn)
+        select_dois = self._generate_select_sql(start_year, end_year, issn, downloaded=False)
         downloaders = Downloaders()
 
-        doif = DoiFactory(self, select_dois)
+        doif = DoiFactory(select_dois)
         dois = doif.dois
         logging.info(f"SQL: {select_dois}")
         logging.info(f"  Pending download count: {len(dois)}")

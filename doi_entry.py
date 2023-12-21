@@ -5,9 +5,10 @@ import os
 import datetime
 
 from db_connection import DBConnection
-import logging 
+import logging
+from config import Config
 
-PDF_DIRECTORY = "./pdf/"
+
 
 # from libgen_api import LibgenSearch
 
@@ -20,7 +21,7 @@ headers = {
 class DoiFactory:
     # TODO: Odd and bad that there are two ways to set up DoiEntry objects. We should use
     # one or the other and enforce it, or at the very least clarify the two cases in comments.
-    def __init__(self, doi_database, sql):
+    def __init__(self, sql):
         """Initialize an object of the class by executing query, extract the fields from 
         query results, create a new DoiEntry object, populate the DoiEntry object with
         the extracted data, add the new DoiEntry object to the results list, and set the 
@@ -78,6 +79,7 @@ class DoiEntry(Utils):
 
         """        
         super().__init__()
+        self.PDF_DIRECTORY = self.config.get_string("downloaders", "pdf_directory")
         if setup_type == None:
             return
         elif setup_type == 'download_chunk':
@@ -151,13 +153,13 @@ class DoiEntry(Utils):
         doi(primary key), issn, published_date, ournal_title,downloaded, details, full_path
         """        
         sql_create_database_table = """ CREATE TABLE IF NOT EXISTS dois (
-                                          doi            text           not null  primary key,
-                                          issn           text           not null,
+                                          doi            varchar(255)           not null  primary key,
+                                          issn           varchar(100)           not null,
                                           published_date date           not null,
-                                          journal_title  text           not null,
+                                          journal_title  varchar(1024)           not null,
                                           downloaded     tinyint(1)     not null,
                                           details        mediumtext null,
-                                          full_path      text           null
+                                          full_path      varchar(2048)           null
                                     );"""
 
 
@@ -169,16 +171,6 @@ class DoiEntry(Utils):
         """Update the dois table in database with the current object's 
         details  using sql query
         """        
-
-        # json_string = json.dumps(self.details)
-        # sql_update = f"""update dois set issn=?,
-        #                                            published_date=?,
-        #                                            journal_title=?,
-        #                                            downloaded=?,
-        #                                            full_path=?,
-        #                                            details=?
-        #                 where doi = "{self.doi}"
-        #        """
 
         sql_update = f"""
             UPDATE dois SET 
@@ -304,6 +296,7 @@ class DoiEntry(Utils):
         if os.path.exists(filename):
             self.full_path = filename
             self.downloaded = True
+            # logging.debug(f"Found paper for doi {self.doi} at {self.full_path}")
             return True
         else:
             self.downloaded = False

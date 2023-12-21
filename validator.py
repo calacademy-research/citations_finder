@@ -183,12 +183,12 @@ class Validator(Utils):
             DBConnection.execute_query(sql)
         sql_create_database_table = """ create table if not exists matches
                                         (
-                                            doi          text       not null
+                                            doi          varchar(255)       not null
                                                 primary key,
-                                            collection   text       null,
+                                            collection   varchar(1024)       null,
                                             `ignore`     tinyint(1) null,
                                             date_added   date       null,
-                                            notes        text       null,
+                                            notes        varchar(8192)       null,
                                             digital_only tinyint(1) null
                                         ); """
 

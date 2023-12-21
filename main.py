@@ -13,7 +13,7 @@ from crossref_journal_entry import CrossrefJournalEntry
 import journal_finder
 import logging
 
-def download_single_doi(doi, config):
+def download_single_doi(doi, doi_database, config):
     """This function handles the retrieval of DOI information, 
     checks if the DOI exists in the database, dois table, 
     and initiates the download of the associated document using 
@@ -121,7 +121,7 @@ def setup():
                      config.get_int('crossref', 'scan_for_dois_before_year'))
     if config.get_boolean('general','write_used_journals'):
         print("Writing to journals table")
-        db.write_journals_to_tsv(config('general','used_journals_only_file'))
+        db.write_journals_to_tsv(config.get_string('general','used_journals_only_file'))
     if config.get_boolean('crossref', 'force_update'):
         print("CROSSREF FORCE INGEST")
 

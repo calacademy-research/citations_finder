@@ -47,10 +47,10 @@ class UnpaywallDownloader(Downloader, Utils):
         """
         sql_create_database_table = """ create table IF NOT EXISTS unpaywall_downloader
                                         (
-                                            doi TEXT primary key,
-                                            open_url TEXT, 
-                                            most_recent_attempt DATE,
-                                            most_recent_firefox_failure DATE,
+                                            doi varchar(255) primary key,
+                                            open_url varchar(2048), 
+                                            most_recent_attempt DATETIME,
+                                            most_recent_firefox_failure DATETIME,
                                             error_code boolean,
                                             not_available boolean
 
@@ -101,7 +101,8 @@ class UnpaywallDownloader(Downloader, Utils):
         if len(results) == 0:
             self.most_recent_attempt = None
         else:
-            self.most_recent_attempt = datetime.strptime(results[0][0], self.DATETIME_FORMAT)
+            # self.most_recent_attempt = datetime.strptime(results[0][0], self.DATETIME_FORMAT)
+            self.most_recent_attempt = results[0][0]
             self.open_url = results[0][1]
             self.most_recent_firefox_failure = results[0][2]
             self.error_code = results[0][3]
@@ -189,7 +190,7 @@ class UnpaywallDownloader(Downloader, Utils):
         force_open_url_update = self.config.get_boolean('unpaywall_downloader', 'force_open_url_update')
         force_update_link_only = self.config.get_boolean('unpaywall_downloader', 'force_update_link_only')
         do_not_refetch_links = self.config.get_boolean('unpaywall_downloader', 'do_not_refetch_links')
-
+        download_result = None
         # if not headless_download:
         logging.info(f"Attempting unpaywall... @{datetime.now()}")
 

@@ -44,22 +44,22 @@ class CrossrefJournalEntry():
 
         """        
         sql_create_database_table = """ CREATE TABLE IF NOT EXISTS issns (
-                                            issn text primary key NOT NULL,
-                                            type text
+                                            issn varchar(100) primary key NOT NULL,
+                                            type varchar(50)
                                         ); """
         DBConnection.execute_query(sql_create_database_table)
 
         sql_create_database_table = """ CREATE TABLE IF NOT EXISTS journals (
-                                            issn text primary key NOT NULL,
-                                            name text,
-                                            type text
+                                            issn varchar(100) primary key NOT NULL,
+                                            name varchar(1024),
+                                            type varchar(50)
                                         ); """
         DBConnection.execute_query(sql_create_database_table)
         sql_create_database_table = """create table if not exists crossref_journal_data
                                     (
-                                        doi     text not null
+                                        doi     varchar(255) not null
                                             primary key,
-                                        title   text not null,
-                                        details text
+                                        title   varchar(1024) not null,
+                                        details mediumtext
                                     );"""
         DBConnection.execute_query(sql_create_database_table)

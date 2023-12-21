@@ -4,23 +4,14 @@ import requests
 from utils_mixin import Utils
 from datetime import datetime
 import os
-import time
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium import webdriver
-import glob
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 import errno
 import signal
 import functools
 import shutil
-from selenium.common.exceptions import WebDriverException
-import pyautogui
 import logging
-
 from selenium.webdriver.firefox.options import Options
-from db_connection import DBConnection
 
 
 class Downloader(ABC, Utils):
@@ -229,7 +220,59 @@ class Downloader(ABC, Utils):
             logging.error("Download unsuccessful. File not found. Returning failure. ")
             return False
 
-    def _firefox_downloader(self, url, doi_entry,path):
+    def _firefox_downloader(self, url, doi_entry):
+        """Download PDF using Firefox/Selenium with headless download."""
+        logging.info(f"Attempting download using firefox/selenium: {url}")
+
+        # Retrieve configurations only once
+        tmp_firefox_pdf_directory = self.config.get_string("downloaders", "tmp_firefox_pdf_directory")
+        page_load_timeout = self.config.get_int('downloader', 'firefox_page_load_timeout')
+
+        self._create_directory_if_not_exists(tmp_firefox_pdf_directory)
+
+        # Set Firefox options
+        options = self._configure_firefox_options(tmp_firefox_pdf_directory)
+
+        with webdriver.Firefox(options=options) as browser:
+            browser.set_page_load_timeout(page_load_timeout)
+            try:
+                browser.get(url)
+            except TimeoutException as e:
+                logging.error("Firefox/Selenium timed out. Checking for partial download.")
+
+            return self.check_and_rename_file(tmp_firefox_pdf_directory, doi_entry.doi)
+
+    def _create_directory_if_not_exists(self, directory):
+        """Create directory if it doesn't exist."""
+        if not os.path.exists(directory):
+            logging.info(f"Creating new PDF directory: {directory}")
+            os.makedirs(directory)
+
+
+    from selenium.webdriver.firefox.options import Options
+
+    def _configure_firefox_options(self, download_directory):
+        """Configure Firefox options for headless download."""
+        options = Options()
+
+        # Set preferences for file download
+        options.set_preference("browser.download.folderList", 2)  # custom location
+        options.set_preference("browser.download.manager.showWhenStarting", False)
+        options.set_preference("browser.download.dir", download_directory)
+        options.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/pdf,application/x-pdf")
+
+        # Disable the built-in PDF viewer to avoid viewing PDFs in the browser
+        options.set_preference("pdfjs.disabled", True)
+
+        # Enable headless mode for Firefox
+        options.add_argument("--headless")
+
+        # Set environment variable for headless mode (if needed)
+        os.environ['MOZ_HEADLESS'] = '1'
+
+        return options
+
+    def dalateme_firefox_downloader(self, url, doi_entry,temp_directory):
         """Attempts to download a PDF file from the specified URL
         using the Firefox browser controlled by Selenium. It sets preferences for
         headless download and saves the file in a directory based on the ISSN and
@@ -248,16 +291,19 @@ class Downloader(ABC, Utils):
 
 
          #creating directory in which pdfs will be stored
-        directory_issn_year = os.path.join(path, doi_entry.issn, str(doi_entry.date.year))
-        if not os.path.exists(directory_issn_year):
-            print(f"Creating new PDF directory: {directory_issn_year}")
-            os.makedirs(directory_issn_year)
-        
+        # tmp_firefox_pdf_directory = os.path.join(path, doi_entry.issn, str(doi_entry.date.year))
+        tmp_firefox_pdf_directory = "./temp_firefox_pdf"
+        tmp_firefox_pdf_directory = self.config.get_string("downloaders","tmp_firefox_pdf_directory")
 
+        if not os.path.exists(tmp_firefox_pdf_directory):
+            print(f"Creating new PDF directory: {tmp_firefox_pdf_directory}")
+            os.makedirs(tmp_firefox_pdf_directory)
+        
+        logging.info(f"Saving to directory: {tmp_firefox_pdf_directory}")
         #setting preferences
         options.set_preference("browser.download.folderList", 2)
         options.set_preference("browser.download.manager.showWhenStarting", False)
-        options.set_preference("browser.download.dir", directory_issn_year)
+        options.set_preference("browser.download.dir", tmp_firefox_pdf_directory)
         options.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/pdf,application/x-pdf")
         #below line triggers brower.get to hang and timeout. Without it, headless function wouldnt work
         options.set_preference("pdfjs.disabled", True)
@@ -268,7 +314,7 @@ class Downloader(ABC, Utils):
         #Initializing browser
         browser = webdriver.Firefox(options=options)
 
-        browser.set_page_load_timeout(self.config.get_int('unpaywall_downloader', 'firefox_page_load_timeout'))
+        browser.set_page_load_timeout(self.config.get_int('downloader', 'firefox_page_load_timeout'))
 
         try:
             try:
@@ -281,7 +327,7 @@ class Downloader(ABC, Utils):
 
             finally:
                 #check whether file has been downloaded prior to time out, if so, rename it, other wise, make uncessful downlaod
-                return self.check_and_rename_file(directory_issn_year,doi_entry.doi)
+                return self.check_and_rename_file(tmp_firefox_pdf_directory,doi_entry.doi)
         
         finally:
             browser.quit()

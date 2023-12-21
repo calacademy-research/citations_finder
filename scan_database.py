@@ -46,19 +46,19 @@ class ScanDatabase(Utils):
                 pass
 
         sql_create_database_table = """ CREATE TABLE IF NOT EXISTS scans (
-                                            doi text primary key not null,
-                                            textfile_path text,
+                                            doi varchar(255) primary key not null,
+                                            textfile_path varchar(2048),
                                             score integer,
                                             cannot_convert boolean,
-                                            title text NOT NULL
+                                            title varchar(8192) NOT NULL
                                         ); """
         DBConnection.execute_query(sql_create_database_table)
 
         sql_create_database_table = """ CREATE TABLE IF NOT EXISTS found_scan_lines (
-                                            doi text,
-                                            line text,
+                                            doi varchar(255),
+                                            line varchar(8192),
                                             score integer,
-                                            matched_string text
+                                            matched_string varchar(1024)
                                         ); """
         DBConnection.execute_query(sql_create_database_table)
 
@@ -100,7 +100,7 @@ class ScanDatabase(Utils):
                 and {self.sql_year_restriction(start_year, end_year)}"""
             dois = DoiFactory(sql).dois
         else:
-            dois = self.doi_db.get_dois(start_year=start_year, end_year=end_year, journal_issn=None)
+            dois = self.doi_db.get_dois(start_year=start_year, end_year=end_year, journal_issn=None, downloaded=True)
         # multiprocessing verison:
         # import multiprocessing as mp
         # pool = mp.Pool(mp.cpu_count())
@@ -124,8 +124,8 @@ class ScanDatabase(Utils):
             DBConnection.execute_query(sql)
 
         sql_create_database_table = """ CREATE TABLE IF NOT EXISTS matched_specimen_ids (
-                                            doi text,
-                                            identifier text
+                                            doi varchar(255),
+                                            identifier varchar(1024)
                                         ); """
         DBConnection.execute_query(sql_create_database_table)
         select_dois = f"""select doi from matches where ignore = 0"""

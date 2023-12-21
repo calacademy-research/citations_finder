@@ -5,9 +5,12 @@ import ntpath
 import time
 import re
 import logging
+from config import Config
 
 class Utils:
     def __init__(self):
+        self.config = Config()
+
         self.response_time = 0
 
     def _get_url_(self, url, headers=None, decode_json=True):
