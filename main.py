@@ -13,7 +13,7 @@ from crossref_journal_entry import CrossrefJournalEntry
 import journal_finder
 import logging
 
-def download_single_doi(doi, doi_database, config):
+def download_single_doi(doi):
     """This function handles the retrieval of DOI information, 
     checks if the DOI exists in the database, dois table, 
     and initiates the download of the associated document using 
@@ -102,7 +102,7 @@ def setup():
             journal_finder.addJournals('journals.tsv', url)
 
     if config.get_boolean('general', 'download_single_doi_mode'):
-        download_single_doi(config.get_string('general', 'download_single_doi'), config)
+        download_single_doi(config.get_string('general', 'download_single_doi'))
         return None
         # above line used to be "sys.exit(0)", but it prevents sphinx autodoc from working
 

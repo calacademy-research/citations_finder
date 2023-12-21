@@ -12,6 +12,7 @@ import functools
 import shutil
 import logging
 from selenium.webdriver.firefox.options import Options
+import subprocess
 
 
 class Downloader(ABC, Utils):
@@ -19,7 +20,7 @@ class Downloader(ABC, Utils):
 
     def __init__(self):
         """_summary_
-        """        
+        """
         self.DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
         self.config = Config()
@@ -45,7 +46,7 @@ class Downloader(ABC, Utils):
         :type most_recent_attempt_datetime: datetime.datetime or None
         :return: True if the conditions meet the datetime requirements, False otherwise.
         :rtype: bool
-        """        
+        """
         if not self.config.get_boolean(section, 'use_datetime_restriction'):
             return True
         if most_recent_attempt_datetime is None:
@@ -70,12 +71,12 @@ class Downloader(ABC, Utils):
 
         :return: A tuple indicating the download status and HTTP status code. - If download is successful, the first element is True, and the second element is the HTTP status code. - If download fails or the content is not in PDF format, the first element is False, and the second element is the HTTP status code.
         :rtype: tuple[bool, int]
-        """        
+        """
         headers = {
             'User-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
         r = requests.get(url, headers=headers, allow_redirects=True, timeout=120, verify=False)
-        
-        #download by sending a http request, if url isnt a html
+
+        # download by sending a http request, if url isnt a html
         if 'html' not in r.headers['Content-Type']:
             logging.warning(f"not html, downloading: {r.headers['Content-Type']} {url}")
             new_directory = os.path.join(path, doi_entry.issn, str(doi_entry.date.year))
@@ -86,15 +87,15 @@ class Downloader(ABC, Utils):
             with open(filename, "wb") as f:
                 logging.info(f"Downloaded {doi_entry.doi} to {filename}.")
                 f.write(r.content)
-            #testing: line below simulate a 503 status code for testing purposes
-            #return (False, 503)
+            # testing: line below simulate a 503 status code for testing purposes
+            # return (False, 503)
             return (True, r.status_code)
-        
-        #raise error if url is a html
+
+        # raise error if url is a html
         else:
             logging.error(f"Not a PDF, can't download. Code: {r.status_code}: {r.headers['Content-Type']} {url}")
-            #testing: line below simulate a 503 status code for testing purposes
-            #return (False, 503)
+            # testing: line below simulate a 503 status code for testing purposes
+            # return (False, 503)
 
             return (False, r.status_code)
 
@@ -105,7 +106,7 @@ class Downloader(ABC, Utils):
         :param doi_entry: _description_
         :type doi_entry: _type_
         :raises NotImplementedError: _description_
-        """        
+        """
         raise NotImplementedError()
 
     @abstractmethod
@@ -113,7 +114,7 @@ class Downloader(ABC, Utils):
         """_summary_
 
         :raises NotImplementedError: _description_
-        """        
+        """
         raise NotImplementedError()
 
     class TimeoutError(Exception):
@@ -126,7 +127,8 @@ class Downloader(ABC, Utils):
         :type seconds: int, optional
         :param error_message: _description_, defaults to os.strerror(errno.ETIME)
         :type error_message: _type_, optional
-        """        
+        """
+
         def decorator(func):
             def _handle_timeout(signum, frame):
                 raise TimeoutError(error_message)
@@ -151,7 +153,7 @@ class Downloader(ABC, Utils):
 
         :param driver: _description_
         :type driver: _type_
-        """        
+        """
         driver.close()
 
     def cleandir(self, path):
@@ -159,7 +161,7 @@ class Downloader(ABC, Utils):
 
         :param path: _description_
         :type path: _type_
-        """        
+        """
         dir = path
         for files in os.listdir(dir):
             path = os.path.join(dir, files)
@@ -168,7 +170,7 @@ class Downloader(ABC, Utils):
             except OSError:
                 os.remove(path)
 
-    def get_latest_downloaded_file(self, directory_issn_year):
+    def get_latest_downloaded_file(self, tmp_pdf_directory):
         """
         Takes a directory path as input and returns the full path
         and name of the latest file downloaded in that directory.
@@ -177,57 +179,69 @@ class Downloader(ABC, Utils):
         :type directory_issn_year: str
         :return: A tuple containing the full path and name of the latest downloaded file.
         :rtype: tuple
-        """        
+        """
         # Get a list of all files in the specified download path
-        list_of_files = os.listdir(directory_issn_year)
-
+        list_of_files = os.listdir(tmp_pdf_directory)
+        if list_of_files is None or len(list_of_files) < 1:
+            return None
         # Use the max function to find the file with the latest creation time
-        latest_file = max(list_of_files, key=lambda x: os.path.getctime(os.path.join(directory_issn_year, x)))
+        latest_file = max(list_of_files, key=lambda x: os.path.getctime(os.path.join(tmp_pdf_directory, x)))
         print(latest_file)
 
         # Construct the full path to the latest file
-        directory_issn_year_textname= os.path.join(directory_issn_year, latest_file)
-        return directory_issn_year_textname,latest_file
+        directory_issn_year_textname = os.path.join(tmp_pdf_directory, latest_file)
+        return directory_issn_year_textname
 
-    def check_and_rename_file(self,directory_issn_year, doi):
+    def check_and_rename_file(self, tmp_pdf_directory, doi_entry, pdf_directory):
         """checks if the latest downloaded file exists in the specified
         directory. If the file exists, it is renamed to it's DOI#
 
-        :param directory_issn_year: The path to the directory containing downloaded files.
-        :type directory_issn_year: str
+        :param tmp_pdf_directory: The path to the directory containing downloaded files.
+        :type tmp_pdf_directory: str
         :param doi: The DOI (Digital Object Identifier) used for renaming the file.
         :type doi: str
         :return: True if the file is successfully downlaoded and renamed, False otherwise.
         :rtype: bool
-        """        
-        directory_issn_year_textname = self.get_latest_downloaded_file(directory_issn_year)
-        
+        """
+        temp_pdf_directory_filename = self.get_latest_downloaded_file(tmp_pdf_directory)
+
         # Check if the file exists at the specified file path
-        if os.path.exists(directory_issn_year_textname):
+        if temp_pdf_directory_filename is not None and os.path.exists(temp_pdf_directory_filename):
 
             # Construct the full path to the new file
-            directory_issn_year_doiname = os.path.join(os.path.dirname(directory_issn_year_textname), 
-                                                    Utils.get_filename_from_doi_string(doi))
-            
-            # Rename the existing file to the new file name
-            os.rename(directory_issn_year_textname, directory_issn_year_doiname)
-            
+            destination_path = os.path.join(pdf_directory,
+                                            doi_entry.issn,
+                                            str(doi_entry.date.year),
+                                            Utils.get_filename_from_doi_string(doi_entry.doi))
+
+            # copy the existing file to the new file name
+            # rsync required to bypass ACL permisisons
+            # preservation when moving betwen filesystems.
+            rsync_command = [
+                "rsync", "-av", "--no-perms", "--no-owner", "--no-group",
+                temp_pdf_directory_filename, destination_path
+            ]
+
+            # Execute the rsync command
+            subprocess.run(rsync_command)
+
+
             # Log a success message
-            logging.info(f"File successfully downloaded to {directory_issn_year} and renamed to {doi}")
+            logging.info(f"File successfully downloaded to {temp_pdf_directory_filename} and renamed to {destination_path}")
             return True
         else:
             # Log a message if the file does not exist
             logging.error("Download unsuccessful. File not found. Returning failure. ")
             return False
 
-    def _firefox_downloader(self, url, doi_entry):
+    def _firefox_downloader(self, url, doi_entry, pdf_directory):
         """Download PDF using Firefox/Selenium with headless download."""
         logging.info(f"Attempting download using firefox/selenium: {url}")
 
         # Retrieve configurations only once
         tmp_firefox_pdf_directory = self.config.get_string("downloaders", "tmp_firefox_pdf_directory")
-        page_load_timeout = self.config.get_int('downloader', 'firefox_page_load_timeout')
-
+        page_load_timeout = self.config.get_int('downloaders', 'firefox_page_load_timeout')
+        shutil.rmtree(tmp_firefox_pdf_directory)
         self._create_directory_if_not_exists(tmp_firefox_pdf_directory)
 
         # Set Firefox options
@@ -238,15 +252,19 @@ class Downloader(ABC, Utils):
             try:
                 browser.get(url)
             except TimeoutException as e:
-                logging.error("Firefox/Selenium timed out. Checking for partial download.")
+                logging.error("Firefox/Selenium timed out. Checking for download....")
 
-            return self.check_and_rename_file(tmp_firefox_pdf_directory, doi_entry.doi)
+            return self.check_and_rename_file(tmp_firefox_pdf_directory, doi_entry, self.PDF_DIRECTORY)
 
     def _create_directory_if_not_exists(self, directory):
         """Create directory if it doesn't exist."""
+
         if not os.path.exists(directory):
-            logging.info(f"Creating new PDF directory: {directory}")
-            os.makedirs(directory)
+            try:
+                os.makedirs(directory)
+            except Exception as e:
+                logging.error(f"Error creating directory: {e}")
+                raise e
 
 
     from selenium.webdriver.firefox.options import Options
@@ -272,7 +290,7 @@ class Downloader(ABC, Utils):
 
         return options
 
-    def dalateme_firefox_downloader(self, url, doi_entry,temp_directory):
+    def delete_me_firefox_downloader(self, url, doi_entry, temp_directory):
         """Attempts to download a PDF file from the specified URL
         using the Firefox browser controlled by Selenium. It sets preferences for
         headless download and saves the file in a directory based on the ISSN and
@@ -284,52 +302,49 @@ class Downloader(ABC, Utils):
         :type doi_entry: DOIEntry
         :return: True if the download and renaming process is successful, False otherwise.
         :rtype: bool
-        """        
+        """
         logging.info(f"Attempting download using firefox/selenium: {url}")
 
         options = Options()
 
-
-         #creating directory in which pdfs will be stored
+        # creating directory in which pdfs will be stored
         # tmp_firefox_pdf_directory = os.path.join(path, doi_entry.issn, str(doi_entry.date.year))
         tmp_firefox_pdf_directory = "./temp_firefox_pdf"
-        tmp_firefox_pdf_directory = self.config.get_string("downloaders","tmp_firefox_pdf_directory")
+        tmp_firefox_pdf_directory = self.config.get_string("downloaders", "tmp_firefox_pdf_directory")
 
         if not os.path.exists(tmp_firefox_pdf_directory):
             print(f"Creating new PDF directory: {tmp_firefox_pdf_directory}")
             os.makedirs(tmp_firefox_pdf_directory)
-        
+
         logging.info(f"Saving to directory: {tmp_firefox_pdf_directory}")
-        #setting preferences
+        # setting preferences
         options.set_preference("browser.download.folderList", 2)
         options.set_preference("browser.download.manager.showWhenStarting", False)
         options.set_preference("browser.download.dir", tmp_firefox_pdf_directory)
         options.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/pdf,application/x-pdf")
-        #below line triggers brower.get to hang and timeout. Without it, headless function wouldnt work
+        # below line triggers brower.get to hang and timeout. Without it, headless function wouldnt work
         options.set_preference("pdfjs.disabled", True)
         options.add_argument("--headless")
         os.environ['MOZ_HEADLESS'] = '1'
 
-
-        #Initializing browser
+        # Initializing browser
         browser = webdriver.Firefox(options=options)
 
         browser.set_page_load_timeout(self.config.get_int('downloader', 'firefox_page_load_timeout'))
 
         try:
             try:
-                #performs headless download
+                # performs headless download
                 browser.get(url)
 
 
             except TimeoutException as e:
-                logging.error(f"Firefox/selenium timed out. Now checking whether pdf has been downloaded prior to timing out")
+                logging.error(
+                    f"Firefox/selenium timed out. Now checking whether pdf has been downloaded prior to timing out")
 
             finally:
-                #check whether file has been downloaded prior to time out, if so, rename it, other wise, make uncessful downlaod
-                return self.check_and_rename_file(tmp_firefox_pdf_directory,doi_entry.doi)
-        
+                # check whether file has been downloaded prior to time out, if so, rename it, other wise, make uncessful downlaod
+                return self.check_and_rename_file(tmp_firefox_pdf_directory, doi_entry.doi, self.PDF_DIRECTORY)
+
         finally:
             browser.quit()
-
-

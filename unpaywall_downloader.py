@@ -51,7 +51,7 @@ class UnpaywallDownloader(Downloader, Utils):
                                             open_url varchar(2048), 
                                             most_recent_attempt DATETIME,
                                             most_recent_firefox_failure DATETIME,
-                                            error_code boolean,
+                                            error_code smallint,
                                             not_available boolean
 
                                         ); """
@@ -256,6 +256,8 @@ class UnpaywallDownloader(Downloader, Utils):
                     firefox_result = self._firefox_downloader(self.open_url, doi_entry, self.PDF_DIRECTORY)
                     if firefox_result is False:
                         self.most_recent_firefox_failure = datetime.now()
+                    else:
+                        logging.info("SUCCESSFUL firefox download")
                     download_result = firefox_result
 
         except exceptions.HTTPError as e:
