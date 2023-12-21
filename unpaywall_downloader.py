@@ -33,6 +33,10 @@ class UnpaywallDownloader(Downloader, Utils):
         self.error_code = None
         self.firefox_failure = None
         self.create_tables()
+        email = self.config.get_string("downloaders", "header_email")
+        UnpywallCredentials(email)
+        self._fetch_config_settings()
+
 
     @classmethod
     def create_tables(self):
@@ -101,6 +105,9 @@ class UnpaywallDownloader(Downloader, Utils):
         if len(results) == 0:
             self.most_recent_attempt = None
         else:
+            if self.do_not_retry:
+                logging.warning: ("Do not retry is set - previous failure won't be attempted")
+                return False
             # self.most_recent_attempt = datetime.strptime(results[0][0], self.DATETIME_FORMAT)
             self.most_recent_attempt = results[0][0]
             self.open_url = results[0][1]
@@ -143,9 +150,13 @@ class UnpaywallDownloader(Downloader, Utils):
 
         # below results is True if the download is successful, False otherwise. Also performs
         # download action
-        results = self._download_unpaywall(doi_entry)
+        result = self._download_unpaywall(doi_entry)
+        if result is True:
+            logging.info("SUCCESSFUL download")
+        else:
+            logging.info("FAILED download")
         self._update_unpaywall_database(doi_entry.doi)
-        return results
+        return result
 
     # Crossref downloader has some good code to extract PDF link
     # from HTML
@@ -172,11 +183,12 @@ class UnpaywallDownloader(Downloader, Utils):
         return is_good
 
     def _download_unpaywall(self, doi_entry):
-        """Attempts to download the DOI entry from Unpaywall based on the given
+        """
+        Attempts to download the DOI entry from Unpaywall based on the given
         DOI entry object. The method retrieves configuration settings and performs
-        various checks to determine the appropriate download strategy. If the DOI 
-        entry is available through Unpaywall,it attempts to download the PDF 
-        file using the direct link. If the download is successful,it returns True, 
+        various checks to determine the appropriate download strategy. If the DOI
+        entry is available through Unpaywall, it attempts to download the PDF
+        file using the direct link. If the download is successful, it returns True,
         otherwise False.
 
         :param doi_entry: The DOI entry object to download.
@@ -185,94 +197,101 @@ class UnpaywallDownloader(Downloader, Utils):
         :return: True if the download is successful, False otherwise.
         :rtype: bool
         """
-        use_firefox_downloader = self.config.get_boolean('unpaywall_downloader', 'firefox_downloader')
-        retry_firefox_failure = self.config.get_boolean('unpaywall_downloader', 'retry_firefox_failure')
-        force_open_url_update = self.config.get_boolean('unpaywall_downloader', 'force_open_url_update')
-        force_update_link_only = self.config.get_boolean('unpaywall_downloader', 'force_update_link_only')
-        do_not_refetch_links = self.config.get_boolean('unpaywall_downloader', 'do_not_refetch_links')
-        download_result = None
-        # if not headless_download:
-        logging.info(f"Attempting unpaywall... @{datetime.now()}")
+        logging.info(f"Attempting Unpaywall download @{datetime.now()}")
 
         try:
-            # logging.debug(f"Downloading to: {doi_entry.generate_file_path()}")
-            email = self.config.get_string("downloaders", "header_email")
-            UnpywallCredentials(email)
+            if not self._fetch_or_reuse_url(doi_entry):
+                return False
 
-            # marking download as failed (False) if do_not_refetch_links
-            if self.not_available == 1 and do_not_refetch_links:
-                logging.warning("Do not re-pull missing unpaywall links")
-                download_result = False
-            # ===========================
-            # if url available, fetch url or reusing url from last pull
-            if self.open_url is None or force_open_url_update:
-                self.open_url = Unpywall.get_pdf_link(doi_entry.doi)
+            if self._is_download_skippable(doi_entry):
+                return False
 
-            else:
-                logging.info(f"re-using url from last unpaywall pull: {self.open_url}..")
-                sleep_time = self.config.get_int('unpaywall_downloader', 're_used_direct_url_sleep_time')
-                if sleep_time > 0:
-                    time.sleep(sleep_time)
-            # ===========================
+            if self.force_update_link_only:
+                return False
 
-            # ===========================
-            # if url not availble, mark download as failed and not_available as True.
-            # if url available, mark not_available as False
-            if self.open_url is None:
-                logging.info(f"Not available through unpaywall.")
-                self.not_available = True
-                download_result = False
-            else:
-                self.not_available = False
-            # ===========================
-
-            if force_update_link_only:
-                download_result = False
-
-            # ===========================
-            # Sophia added if block here to prevent download from starting, if URL doesn't exist
-            if self.not_available is True:
-                logging.info(f"Skipping download")
-                response = False
-            else:
-                logging.info(
-                    f"Attempting unpaywall download, URL: ({self.open_url}) will download to {doi_entry.generate_file_path()}")
-                # below line performs download function
-                response, self.error_code = self._download_url_to_pdf_bin(doi_entry, self.open_url, self.PDF_DIRECTORY)
-            # ===========================
-
-            if response:
-                download_result = True
-
-            # added 403 below
-            if self.error_code == 503 or self.error_code == 403 or self.error_code == 429:
-
-                logging.info("Http error 403, 429 or 503, trying firefox selenium downloader, if enabled")
-
-                if use_firefox_downloader:
-                    if self.most_recent_firefox_failure is not None and retry_firefox_failure is False:
-                        logging.error("We have a firefox browser download failure; not retrying per config")
-                        raise Exception
-                    firefox_result = self._firefox_downloader(self.open_url, doi_entry, self.PDF_DIRECTORY)
-                    if firefox_result is False:
-                        self.most_recent_firefox_failure = datetime.now()
-                    else:
-                        logging.info("SUCCESSFUL firefox download")
-                    download_result = firefox_result
-
+            return self._attempt_download(doi_entry)
         except exceptions.HTTPError as e:
-            logging.info(f"Not available through unpaywall... {e}")
+            logging.info(f"Not available through Unpaywall: {e}")
+            return False
         except TypeError as e:
-            logging.info(
-                f"Unpaywall redirected to an html link, likely a redirect that requires a browser: {e} {self.open_url}")
+            logging.info(f"Redirect to HTML link, requires browser: {e} URL: {self.open_url}")
+            return False
         except TimeoutError as e:
-            logging.warning(f"Unpaywall timeout error attempting download: {e} {self.open_url}")
+            logging.warning(f"Timeout error during download: {e} URL: {self.open_url}")
+            return False
         except requests.exceptions.ChunkedEncodingError as e:
-            logging.warning(f"Unpaywall encoding error attempting download: {e} {self.open_url}")
+            logging.warning(f"Encoding error during download: {e} URL: {self.open_url}")
+            return False
         except Exception as e:
             traceback.print_exc()
-            logging.error(f"Unpaywall unexpected exception: {e}")
-        finally:
-            if download_result is None:
-                download_result = False
-            return download_result
+            logging.error(f"Unexpected exception during download: {e}")
+            return False
+
+
+    def _fetch_config_settings(self):
+        config_keys = ['firefox_downloader',
+                       'retry_firefox_failure',
+                       'force_open_url_update',
+                       'force_update_link_only',
+                       'do_not_refetch_links',
+                       'do_not_retry']
+
+        for key in config_keys:
+            setattr(self, key, self.config.get_boolean('unpaywall_downloader', key))
+
+    #
+    def _is_download_skippable(self, doi_entry):
+        if self.not_available and self.do_not_refetch_links:
+            logging.warning("Skipping missing Unpaywall links")
+            return True
+
+        return False
+
+    def _fetch_or_reuse_url(self, doi_entry):
+        if self.open_url is None or self.force_open_url_update:
+            self.open_url = Unpywall.get_pdf_link(doi_entry.doi)
+            if self.open_url is None:
+                logging.info("DOI not available through Unpaywall.")
+                self.not_available = True
+                return False
+            self.not_available = False
+        else:
+            logging.info(f"Re-using URL from last Unpaywall pull: {self.open_url}")
+            sleep_time = self.config.get_int('unpaywall_downloader', 're_used_direct_url_sleep_time')
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+        return True
+
+    def _attempt_download(self, doi_entry):
+        if self.not_available:
+            logging.info("Skipping download due to unavailability")
+            return False
+
+        logging.info(f"Downloading from Unpaywall URL: {self.open_url}")
+        response, self.error_code = self._download_url_to_pdf_bin(doi_entry, self.open_url, self.PDF_DIRECTORY)
+
+        if response:
+            return True
+        if self.error_code in [403, 429, 503]:
+            return self._attempt_firefox_download(doi_entry)
+        return False
+
+    def _attempt_firefox_download(self, doi_entry):
+        if not self.firefox_downloader:
+            return False
+
+        if self.most_recent_firefox_failure and not self.retry_firefox_failure:
+            logging.error("Skipping Firefox download due to previous failure")
+            return False
+
+        try:
+            if not self._firefox_downloader(self.open_url, doi_entry, self.PDF_DIRECTORY):
+                self.most_recent_firefox_failure = datetime.now()
+                return False
+            logging.info("Successful Firefox download")
+            self.error_code = None
+            return True
+        except Exception as e:
+            logging.error(f"Firefox download failed: {e}")
+            self.most_recent_firefox_failure = datetime.now()
+            return False

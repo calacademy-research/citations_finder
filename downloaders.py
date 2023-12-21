@@ -6,8 +6,7 @@ from datetime import datetime
 import concurrent.futures
 from more_itertools import grouper
 import logging
-from doi_entry import DoiEntry
-
+import random
 from doi_entry import DoiEntry
 
 
@@ -92,11 +91,15 @@ class Downloaders:
         :param doi_list: A list of DOIEntry objects representing the DOI entries to be downloaded.
         :type doi_list: List[DOIEntry]
         """        
+        randomize = self.config.get_boolean("downloaders","randomize_download_order")
+        if randomize:
+            random.shuffle(doi_list)
 
         for doi_entry in doi_list:
         # logging.warning(f"journal:{doi_entry.journal_title} not found: {doi_entry.not_found_count} doi: {doi_entry.doi}")
-            if self.download(doi_entry):
-                doi_entry.mark_successful_download()
+            if not doi_entry.check_file():
+                if self.download(doi_entry):
+                    doi_entry.mark_successful_download()
 
 
 

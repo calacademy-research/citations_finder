@@ -5,7 +5,7 @@ import requests.exceptions
 from doi_entry import DoiEntry
 from doi_entry import DoiFactory
 from utils_mixin import Utils
-import glob
+import random
 import urllib
 import time
 import csv
@@ -209,15 +209,21 @@ class DoiDatabase(Utils):
                   AND downloaded = False
                   GROUP BY journal_title, issn
                   ORDER BY COUNT(doi) ASC'''
-
         journals = DBConnection.execute_query(sql)
+        suppress_journal_report_header = self.config.get_boolean("downloaders","suppress_journal_report_header")
+
+        randomize = self.config.get_boolean("downloaders","randomize_download_order")
+        if randomize:
+            random.shuffle(journals)
+
         for journal, issn, doi_count in journals:
             # journal = journal[0]
             # issn = journal[1]
             logging.info(f"Attempting downloads for journal: {journal}:{issn}")
-            report = DatabaseReport(self, start_year, end_year, journal)
-            logging.info("\n")
-            logging.info(report.report(journal=journal, issn=issn, summary=False))
+            if not suppress_journal_report_header:
+                report = DatabaseReport(self, start_year, end_year, journal)
+                logging.info("\n")
+                logging.info(report.report(journal=journal, issn=issn, summary=False))
             self.download_dois(start_year, end_year, journal=journal, issn=issn)
 
     def _generate_select_sql(self, start_year, end_year, journal_issn, downloaded):
@@ -237,6 +243,7 @@ class DoiDatabase(Utils):
         :return: The SQL query for selecting DOI entries based on the provided criteria.
         :rtype: str
         """
+
         conditions = []
 
         if downloaded is not None:
@@ -324,10 +331,10 @@ class DoiDatabase(Utils):
         """        
         select_dois = self._generate_select_sql(start_year, end_year, issn, downloaded=False)
         downloaders = Downloaders()
+        logging.info(f"SQL: {select_dois}")
 
         doif = DoiFactory(select_dois)
         dois = doif.dois
-        logging.info(f"SQL: {select_dois}")
         logging.info(f"  Pending download count: {len(dois)}")
         download_list = []
         for doi_entry in dois:
