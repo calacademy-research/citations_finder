@@ -4,7 +4,6 @@ services:
     build: .
     volumes:
       - ./config.ini:/app/config.ini
-      - ./vm/vm_passwords.yml:/app/vm/vm_passwords.yml
+      - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
       - ./pdf:/app/pdf
-#    ports:
-#      - "3326:3326"
+

@@ -3,8 +3,6 @@ import importlib
 from config import Config
 import sys
 from datetime import datetime
-import concurrent.futures
-from more_itertools import grouper
 import logging
 import random
 from doi_entry import DoiEntry
@@ -49,38 +47,8 @@ class Downloaders:
         sys.modules[module] = module
         return module
 
-    def download_list_parallel(self, doi_list):
-        """Uses ProcessPoolExecutor to download DOI entries from 
-        the given list in parallel. It divides the DOI entries into groups using 
-        the `grouper` function and submits each group to the executor
-        for parallel downloading. The number of parallel processes is set to 10.
-
-        :param doi_list: A list of DOIEntry objects representing the DOI entries to be downloaded.
-        :type doi_list: List[DOIEntry]
-        """        
-        executor = concurrent.futures.ProcessPoolExecutor(10)
-        futures = [executor.submit(self.download_list_serial, group)
-                   for group in grouper(5, doi_list)]
-        concurrent.futures.wait(futures)
 
     def download_list(self, doi_list):
-        """Download DOI entries in the given list.
-
-    
-        It checks the configuration to determine whether to use the parallel downloader or the serial downloader.
-        If the parallel downloader is enabled, the method will invoke the `download_list_parallel` method.
-        Otherwise, it will use the `download_list_serial` method to download the DOI entries in serial order.
-
-        :param doi_list: A list of DOIEntry objects representing the DOI entries to be downloaded.
-        :type doi_list: List[DOIEntry]
-        """        
-        parallel = self.config.get_boolean('downloaders', 'parallel_downloader')
-        if parallel:
-            self.download_list_parallel(doi_list)
-        else:
-            self.download_list_serial(doi_list)
-
-    def download_list_serial(self, doi_list):
         """Download DOI entries in serial order.
 
         This method downloads DOI entries from the given list in a serial (sequential) order.
@@ -100,7 +68,9 @@ class Downloaders:
             if not doi_entry.check_file():
                 if self.download(doi_entry):
                     doi_entry.mark_successful_download()
-
+            else:
+                # it's downloaded, but not marked as downloaded.
+                doi_entry.mark_successful_download()
 
 
     def download(self, doi_entry:DoiEntry):

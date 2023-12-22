@@ -10,9 +10,6 @@ from utils_mixin import Utils
 import time
 import logging
 
-
-# from headless_download import HeadlessDownload
-
 class UnpaywallDownloader(Downloader, Utils):
 
     def __init__(self):

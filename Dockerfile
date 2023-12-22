@@ -8,7 +8,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # Install Python and pip
 USER root
 RUN apt-get update && \
-    apt-get install -y python3 python3-pip default-libmysqlclient-dev wget ca-certificates tar gzip libgtk-3-0 libasound2 libdbus-glib-1-2 libgtk-3-0 libxrender1 libxcomposite1 libxt6 libpci3 libpulse0 libpangocairo-1.0-0 && \
+    apt-get install -y python3 python3-pip rsync default-libmysqlclient-dev wget ca-certificates tar gzip libgtk-3-0 libasound2 libdbus-glib-1-2 libgtk-3-0 libxrender1 libxcomposite1 libxt6 libpci3 libpulse0 libpangocairo-1.0-0 && \
     rm -rf /var/lib/apt/lists/*
 
 # Download and install Firefox 121.0
