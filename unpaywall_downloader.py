@@ -246,7 +246,15 @@ class UnpaywallDownloader(Downloader, Utils):
 
     def _fetch_or_reuse_url(self, doi_entry):
         if self.open_url is None or self.force_open_url_update:
-            self.open_url = Unpywall.get_pdf_link(doi_entry.doi)
+            for attempt in range(4):
+                try:
+                    self.open_url = Unpywall.get_pdf_link(doi_entry.doi)
+                    break
+                except Exception as e:
+                    logging.error(
+                        f"Attempt {attempt + 1}: Failed to get url from unpaywall for doi:{doi_entry.doi}. exception: {e}")
+                    time.sleep(15 * 2 ** attempt)
+
             if self.open_url is None:
                 logging.info("DOI not available through Unpaywall.")
                 self.not_available = True
