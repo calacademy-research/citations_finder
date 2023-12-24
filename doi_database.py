@@ -223,7 +223,7 @@ class DoiDatabase(Utils):
             if not suppress_journal_report_header:
                 report = DatabaseReport(self, start_year, end_year, journal)
                 logging.info("\n")
-                logging.info(report.report(journal=journal, issn=issn, summary=False))
+                logging.info(report.report(journal=issn, summary=False))
             self.download_dois(start_year, end_year, journal=journal, issn=issn)
 
     def _generate_select_sql(self, start_year, end_year, journal_issn, downloaded):

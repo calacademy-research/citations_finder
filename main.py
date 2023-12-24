@@ -133,7 +133,7 @@ def setup():
 
         report_start_year = config.get_int('general', 'report_start_year')
         report_end_year = config.get_int('general', 'report_end_year')
-        report = DatabaseReport(db, report_start_year, report_end_year, journal=None)
+        report = DatabaseReport(db, report_start_year, report_end_year, issn=None)
         logging.info(report.report())
         if config.get_boolean('general', 'exit_after_report'):
             raise SystemExit(0)

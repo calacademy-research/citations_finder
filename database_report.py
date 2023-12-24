@@ -1,17 +1,18 @@
 from doi_entry import DoiFactory
 from db_connection import DBConnection
+from tabulate import tabulate
 
 
 class DatabaseReport:
     categories = ['downloaded', 'missing', 'total']
 
-    def __init__(self, doi_database, start_year=None, end_year=None, journal=None):
+    def __init__(self, doi_database, start_year=None, end_year=None, issn=None):
         self.doi_database = doi_database
         self.good_download_count = 0
         self.start_year = start_year
         self.end_year = end_year
         self.dois = None
-        self._load_dois(journal=journal)
+        self._load_dois(issn=issn)
 
 
     def _sql_date_suffix(self, and_var=True):
@@ -33,18 +34,18 @@ class DatabaseReport:
                '{self.start_year}-01-01' AND '{self.end_year}-12-31'"""
         return retval
 
-    def _sql_journal_suffix(self, journal, and_var=True):
+    def _sql_journal_suffix(self, issn, and_var=True):
         retval = ""
-        if journal is not None:
+        if issn is not None:
             if and_var:
                 retval += " and"
             else:
                 retval += " where"
 
-            retval += f""" journal_title='{journal}'"""
+            retval += f""" issn='{issn}'"""
         return retval
 
-    def _load_dois(self, journal=None):
+    def _load_dois(self, issn=None):
         """ Load DOIs from a database, and potentially filter
         by a specific journal title if desired
 
@@ -53,8 +54,8 @@ class DatabaseReport:
         """        
         select_dois = f"""select * from dois"""
         select_dois += self._sql_date_suffix(False)
-        if journal is not None:
-            select_dois += f' and journal_title="{journal}"'
+        if issn is not None:
+            select_dois += f' and issn="{issn}"'
 
         doif = DoiFactory(select_dois)
         self.dois = doif.dois
@@ -65,12 +66,18 @@ class DatabaseReport:
         :return: A list of unique journal titles present in the database.
         :rtype: List[str]
         """        
-        sql = f"""select distinct journal_title from dois"""
+        sql = f"""select distinct issn from dois"""
         sql += self._sql_date_suffix(False)
 
         return DBConnection.execute_query(sql)
 
-    def _get_downloaded(self, journal=None):
+    def _get_journal_title(self,issn):
+        sql = f"""select name from journals where issn ='{issn}'"""
+
+        value = DBConnection.execute_query(sql)
+        return value
+
+    def _get_downloaded(self, issn=None):
         """Get the count of downloaded DOI entries.
 
         :param journal: The specific journal name for which to get the count, defaults to None.
@@ -80,7 +87,7 @@ class DatabaseReport:
         """        
         sql = f"""select count(*) from dois where downloaded=TRUE"""
         sql += self._sql_date_suffix()
-        sql += self._sql_journal_suffix(journal)
+        sql += self._sql_journal_suffix(issn)
 
         return DBConnection.execute_query(sql)[0][0]
 
@@ -91,7 +98,7 @@ class DatabaseReport:
 
     # return DBConnection.execute_query(sql)[0][0]
 
-    def _get_not_downloaded(self, journal=None):
+    def _get_not_downloaded(self, issn=None):
         """Get the count of NOT downloaded DOI entries.
 
         :param journal: The specific journal name for which to get the count, defaults to None.
@@ -101,7 +108,7 @@ class DatabaseReport:
         """        
         sql = f"""select count(*) from dois where downloaded=FALSE"""
         sql += self._sql_date_suffix()
-        sql += self._sql_journal_suffix(journal)
+        sql += self._sql_journal_suffix(issn)
 
         return DBConnection.execute_query(sql)[0][0]
 
@@ -114,7 +121,7 @@ class DatabaseReport:
     # we use not available because it's possible
     # that the open_url is null (not available) but we haven't
     # queried it yet, so not_available would also be null
-    def _get_unpaywall_has_open_link(self, journal=None):
+    def _get_unpaywall_has_open_link(self, issn=None):
         sql = f"""select count(*)
         from unpaywall_downloader,
              dois
@@ -123,21 +130,30 @@ class DatabaseReport:
           """
 
         sql += self._sql_date_suffix()
-        sql += self._sql_journal_suffix(journal)
+        sql += self._sql_journal_suffix(issn)
         sql = sql.replace("'s", "''s")  # hack. this should be by issn
 
         return int(DBConnection.execute_query(sql)[0][0])
 
-    def _get_unpaywall_has_err_code(self, journal=None):
+    def _get_unpaywall_has_err_code(self, issn=None):
         sql = f"""select count(*) from dois,unpaywall_downloader where dois.doi = unpaywall_downloader.doi 
                     and downloaded=FALSE and unpaywall_downloader.error_code """
 
         sql += self._sql_date_suffix()
-        sql += self._sql_journal_suffix(journal)
+        sql += self._sql_journal_suffix(issn)
         sql = sql.replace("'s", "''s")
         return int(DBConnection.execute_query(sql)[0][0])
 
-    def report(self, journal=None, issn=None, summary=True):
+    def _get_unpaywall_failed_download(self, issn=None):
+        sql = f"""select count(*) from dois,unpaywall_downloader where dois.doi = unpaywall_downloader.doi 
+                    and downloaded=FALSE and unpaywall_downloader.most_recent_attempt is not NULL """
+
+        sql += self._sql_date_suffix()
+        sql += self._sql_journal_suffix(issn)
+        sql = sql.replace("'s", "''s")
+        return int(DBConnection.execute_query(sql)[0][0])
+
+    def report(self, issn=None, summary=True):
         """Generate a report on the database statistics. Note this takes a while
         to run
 
@@ -160,35 +176,39 @@ class DatabaseReport:
 
             str += f"Successful downloads: {self._get_downloaded()}\n"
             str += f"Not downloaded: {self._get_not_downloaded()}\n"
-        if journal is None:
-            journals = self._get_journals()
+        if issn is None:
+            issns = self._get_journals()
         else:
-            journals = [[journal]]
+            issns = [[issn]]
         journal_stats = {}
-        for journal in journals:
-            journal = journal[0]
-            dict = {'journal': journal}
+        for cur_issn in issns:
+            issn = cur_issn[0]
+            dict = {'journal': issn}
             for category in DatabaseReport.categories:
                 dict[category] = 0
-            journal_stats[journal] = dict
+            journal_stats[issn] = dict
 
         for doi in self.dois:
-            journal = doi.journal_title
-            stats = journal_stats[journal]
+            issn = doi.issn
+            try:
+                stats = journal_stats[issn]
 
-            if not self.start_year <= doi.date.year <= self.end_year:
-                continue
-            stats['total'] += 1
-            if doi.downloaded:
-                stats['downloaded'] += 1
-            else:
-                stats['missing'] += 1
-        from tabulate import tabulate
+                if not self.start_year <= doi.date.year <= self.end_year:
+                    continue
+                stats['total'] += 1
+                if doi.downloaded:
+                    stats['downloaded'] += 1
+                else:
+                    stats['missing'] += 1
+            except KeyError as e:
+                # usually a doi with a missing journal
+                pass
         table = []
 
-        for journal, stats in journal_stats.items():
+        for issn, stats in journal_stats.items():
             row = []
-            open_link_num = self._get_unpaywall_has_open_link(journal)
+            row.append(self._get_journal_title(issn))
+            open_link_num = self._get_unpaywall_has_open_link(issn)
 
             # Downloaded, missing, total
             for statname, stat in stats.items():
@@ -209,15 +229,25 @@ class DatabaseReport:
             # raw number with open links (UP link)
             row.append(open_link_num)
             # Number of not downloaded with error codes
-            row.append(self._get_unpaywall_has_err_code(journal))
+            row.append(self._get_unpaywall_has_err_code(issn))
+            row.append(self._get_unpaywall_failed_download(issn))
 
             table.append(row)
         sorted_table = sorted(table, key=lambda x: x[5])
         for i, row in enumerate(sorted_table):
-            percent_string = f"{row[5]:.0f}%"
-            sorted_table[i][5] = percent_string
+            try:
+                percent_string = f"{row[6]:.0f}%"
+            except Exception as e:
+                pass
+            sorted_table[i][6] = percent_string
 
         str += tabulate(sorted_table,
-                        headers=['Journal'] + DatabaseReport.categories + ['%open'] + ["%got"] + ["UP link"] + [
-                            "UP err"])
+                        headers=['Journal'] +
+                                ['ISSN']+
+                                DatabaseReport.categories +
+                                ['%open'] +
+                                ["%got"] +
+                                ["UP link"] +
+                                ["UP err"] +
+                        ["Failed"])
         return str
