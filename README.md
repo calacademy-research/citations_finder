@@ -29,17 +29,17 @@ DOIs, thusly:
     dest_path = sanitized_identifier + ".pdf"
 
 Ensure any existing PDFs conform to this format, place them in said directory, and run
-download. Download will use downloaded papers when available. 
+download. Download will use downloaded papers when available.
 
 Note that if your doi_database is empty (i.e. if you haven't done the initial and/or forced
 download for crossref in config.ini) you can import these papers by using the "import_pdfs"
-function in doi_database.db. currently this would need to be hardcoded for a one-time run in 
+function in doi_database.db. currently this would need to be hardcoded for a one-time run in
 main.py
 
 # Steps
 
 config.ini contains initial configuration. An example config.ini is in config.template.ini.
-The only entrypoint is main.py - so 
+The only entrypoint is main.py - so
 
 ```#python3 ./main.py ```
 
@@ -56,15 +56,12 @@ will start the program. What gets run is then controlled by the contents of conf
    Ingests the list of targeted publications from journals.tsv. See settings; this is a no-op
    after the initial run. If it's not already marked in the database as complete,
    downloads all the DOI data from crossref from each in the year range indicated.
-   
 
-   Currently won't download papers newer than the oldest requested. In other words, if at any time users
+Currently won't download papers newer than the oldest requested. In other words, if at any time users
 requested papers from, say, 2014 and ONLY 2014, the system will assume that papers newer than
 2014 have all been downloded. In case of partial downloads use force-download option for missing years.
 
-
-   Downloads from crossref "politely" using a back-off algorithm to not saturate their site.
-
+Downloads from crossref "politely" using a back-off algorithm to not saturate their site.
 
 1. **download (downloaders)**
 
@@ -121,9 +118,7 @@ This requires some configuration tweaking; on the mac (the only platform tested 
 pyautogui module to simulate user keyboard input (command-s to save). For this to work, you
 must enable the application running citations_finder (e.g.: command, or pycharm) to do keyboard input.
 
-**WARNING WARNING WARNING**:
-This will ERASE the contents of firefox_save_directory. Recommended that you change the default firefox
-save directory to something specific while running in this mode.
+
 
 # Technical notes
 
@@ -141,16 +136,17 @@ Currently only tested on mac. create a virtual environment using the requirement
 * Examine metapub: https://github.com/metapub as a possible source for how to download papers and/or approach
 
 * Examine https://github.com/scholarly-python-package/scholarly/blob/main/scholarly/_proxy_generator.py
-  as a potenital source of captcha bypasses (also check https://scholarly.readthedocs.io/en/stable/quickstart.html#using-proxies)
+  as a potenital source of captcha bypasses (also
+  check https://scholarly.readthedocs.io/en/stable/quickstart.html#using-proxies)
 
 * We're hitting a lot of ddos protections. Detect this condition and Integrate with a VPN (ala nord vpn)
-  to auto rotate the origin IP to see if this gets around the ddos wall. [no known vpn api works on mac, 
+  to auto rotate the origin IP to see if this gets around the ddos wall. [no known vpn api works on mac,
   more research required]
 
 * archive.org downloader (may be subsumed in unpaywall.org)
 
 * start_year and end_year are useful in journals but they're also may be being used in some cases
-  to determine if dois are downloaded. Audit the usage of journals start_year and end_year 
+  to determine if dois are downloaded. Audit the usage of journals start_year and end_year
   to ensure they're not overgeneralized.
 
 * unpaywall_downloader:  "download_link" doesn't work very well. Most of the time this links to an
@@ -159,7 +155,7 @@ Currently only tested on mac. create a virtual environment using the requirement
   look for the existance of a "download pdf" button. This might indicate that it is indeed an html-ified
   paper (we'd need to support that, but it's actually a better data source than pdf->text) or actually
   use said button's URL to download the true PDF.
-  
+
 * Get specimen count compare to pubs on a per institution ratio
 
 * note known failure case - we don't always OCR 90 degree rotated tables
@@ -194,7 +190,7 @@ Currently only tested on mac. create a virtual environment using the requirement
 
 * Todo: Add "cas number" to exclusion when above bug is fixed
 
-* TODO: bug in scanning (potentially very bad) - in scan.py: 
+* TODO: bug in scanning (potentially very bad) - in scan.py:
   this only encompasses a few of the tags we end up scanning for
   in more detail with user specified things later - and I think it's currently the screening
   step. that's bad; let's review to ensure that the top level screen encompasses
@@ -202,12 +198,34 @@ Currently only tested on mac. create a virtual environment using the requirement
   _get_scored_strings.
 
 * TODO: doi_database downloading from crossref - api only presents with "oldest year", but
-    if the results come in date order it would be possbile to download specific years instead of oldest
-    to now. It is likely that this is so, someone should confirm with RTFM
- 
+  if the results come in date order it would be possbile to download specific years instead of oldest
+  to now. It is likely that this is so, someone should confirm with RTFM
+
 * fix and test crossref downloader (may be subsumed in unpaywall.org?)
 
 * Generalize to work on windows - use os.path.join instead of slashes using (os.path.sep) and os.path.join.
 
+Can't download these; it should work! 10.3390/plants11071002 10.3390/plants11081024 10.3390/plants11081012 are
+similar.
 
-Can't download these; it should work! 10.3390/plants11071002 10.3390/plants11081024 10.3390/plants11081012 are similar.
+Peerj - write a downloader:
+app3_1 | Downloading from Unpaywall URL: https://peerj.com/articles/10006.pdf
+app3_1 | Starting new HTTPS connection (1): peerj.com:443
+app3_1 | /usr/local/lib/python3.10/dist-packages/urllib3/connectionpool.py:1099: InsecureRequestWarning:
+Unverified HTTPS request is being made to host 'peerj.com'. Adding certificate verification is strongly
+advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+app3_1 | warnings.warn(
+app3_1 | https://peerj.com:443 "GET /articles/10006.pdf HTTP/1.1" 400 1702
+app3_1 | Traceback (most recent call last):
+app3_1 | File "/app/unpaywall_downloader.py", line 209, in _download_unpaywall
+app3_1 | return self._attempt_download(doi_entry)
+app3_1 | File "/app/unpaywall_downloader.py", line 276, in _attempt_download
+app3_1 | response, self.error_code = self._download_url_to_pdf_bin(doi_entry, self.open_url,
+self.PDF_DIRECTORY)
+app3_1 | File "/app/downloader.py", line 80, in _download_url_to_pdf_bin
+app3_1 | if 'html' not in r.headers['Content-Type']:
+app3_1 | File "/usr/local/lib/python3.10/dist-packages/requests/structures.py", line 52, in __getitem__
+app3_1 | return self._store[key.lower()][1]
+app3_1 | KeyError: 'content-type'
+app3_1 | Unexpected exception during download: 'content-type'
+app3_1 | FAILED download
