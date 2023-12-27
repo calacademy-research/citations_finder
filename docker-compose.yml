@@ -7,37 +7,37 @@ services:
       - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
       - ./pdf:/app/pdf
 
-  app2:
-    build: .
-    volumes:
-      - ./config.ini:/app/config.ini
-      - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
-      - ./pdf:/app/pdf
-
-  app3:
-    build: .
-    volumes:
-      - ./config.ini:/app/config.ini
-      - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
-      - ./pdf:/app/pdf
-
-  app4:
-    build: .
-    volumes:
-      - ./config.ini:/app/config.ini
-      - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
-      - ./pdf:/app/pdf
-
-  app6:
-    build: .
-    volumes:
-      - ./config.ini:/app/config.ini
-      - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
-      - ./pdf:/app/pdf
-
-  app5:
-    build: .
-    volumes:
-      - ./config.ini:/app/config.ini
-      - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
-      - ./pdf:/app/pdf
+#  app2:
+#    build: .
+#    volumes:
+#      - ./config.ini:/app/config.ini
+#      - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
+#      - ./pdf:/app/pdf
+#
+#  app3:
+#    build: .
+#    volumes:
+#      - ./config.ini:/app/config.ini
+#      - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
+#      - ./pdf:/app/pdf
+#
+#  app4:
+#    build: .
+#    volumes:
+#      - ./config.ini:/app/config.ini
+#      - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
+#      - ./pdf:/app/pdf
+#
+#  app6:
+#    build: .
+#    volumes:
+#      - ./config.ini:/app/config.ini
+#      - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
+#      - ./pdf:/app/pdf
+#
+#  app5:
+#    build: .
+#    volumes:
+#      - ./config.ini:/app/config.ini
+#      - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
+#      - ./pdf:/app/pdf

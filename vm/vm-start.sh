@@ -1,7 +1,8 @@
 #!/bin/bash
 az account get-access-token --output none || az login
-
 source azure-deploy-config
+export ANSIBLE_NOCOWS=1
+
 adminUsername=$(yq e '.azure_username' vm_passwords.yml)
 adminPassword=$(yq e '.azure_password' vm_passwords.yml)
 
@@ -38,11 +39,36 @@ az vm create \
   --image $image \
   --admin-username $adminUsername \
   --admin-password $adminPassword \
-  --ssh-key-value "$(cat pub-keys.txt)" \
+  --ssh-key-value "$(cat ~/.ssh/id_rsa.pub)" \
   --storage-sku Standard_LRS \
   --os-disk-size-gb $diskSizeGB > /dev/null
 
 az vm start --name $uniqueVmName --resource-group $resourceGroupName > /dev/null
 
-ip=$(az vm list-ip-addresses --resource-group $resourceGroupName --name $uniqueVmName --query "[].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
-echo $ip
+echo "VM STARTED SUCCESSFULLY"
+
+
+
+# optional - set up reverse tunnel for database connection
+echo "Setting up SSH tunnel for VM: $uniqueVmName IP: $IP_ADDRESS"
+command="ssh -o StrictHostKeyChecking=no -fN -R 3326:localhost:3326 $collectionsdbUser@$IP_ADDRESS"
+echo running: "$command"
+# Execute nested SSH command to set up the tunnel from collectionsdb to the VM
+echo full: "ssh -t admin@collectionsdb.calacademy.org $command"
+ssh -t admin@collectionsdb.calacademy.org $command
+
+echo "Tunnel established for $uniqueVmName to collectionsdb"
+
+# configure ansible
+vmStatus=$(az vm get-instance-view --name $uniqueVmName --resource-group $resourceGroupName --query "instanceView.statuses[?code=='PowerState/running']" -o tsv 2>/dev/null)
+if [[ $vmStatus ]]; then
+    IP_ADDRESS=$(az vm list-ip-addresses --resource-group $resourceGroupName --name $uniqueVmName --query "[].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
+    echo "VM is running. IP: $IP_ADDRESS"
+    echo "Running playbook on VM: $uniqueVmName IP: $IP_ADDRESS"
+    ansible-playbook -i "$IP_ADDRESS," vm-setup-playbook.yml
+else
+    echo "VM $uniqueVmName is not running or IP address could not be retrieved."
+    exit 1
+fi
+
+

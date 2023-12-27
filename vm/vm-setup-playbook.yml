@@ -3,6 +3,11 @@
   hosts: all
   become: yes
 
+  vars:
+    rclone_config_dir: "/root/.config/rclone"
+    rclone_config_file: "{{ rclone_config_dir }}/rclone.conf"
+    mount_dir: "/Volumes/pdf"
+
   tasks:
     - name: Get the current user on the target machine
       shell: whoami
@@ -51,45 +56,145 @@
         force: yes
       become: no  # Run as the default user
 
-    - name: Check if doi_database.db exists locally
+    - name: Add Docker GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+        state: present
+        update_cache: yes
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Install Docker CE
+      ansible.builtin.apt:
+        name: docker-ce
+        state: latest
+        update_cache: yes
+
+    - name: Ensure rclone config directory exists
+      file:
+        path: "{{ rclone_config_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Include vm_passwords.yml
+      include_vars:
+        file: vm_passwords.yml
+        name: vm_passwords
+
+    - name: Show rclone_config_file contents
+      debug:
+        var: rclone_config_file
+      become: no  # Run as the default user
+
+    - name: Add configuration to rclone.conf
+      blockinfile:
+        path: "{{ rclone_config_file }}"
+        create: yes
+        block: |
+          [pdf-cloud]
+          type = s3
+          provider = Other
+          access_key_id = {{ vm_passwords.pdf_s3_access_key_id }}
+          secret_access_key = {{ vm_passwords.pdf_s3_secret_access_key }}
+          endpoint = {{ vm_passwords.pdf_s3_pdf_endpoint }}
+          acl = private
+
+
+    - name: Check if rclone is running
+      shell: pgrep rclone
+      register: rclone_pid
+      ignore_errors: yes
+
+    - name: Kill existing rclone process
+      shell: kill {{ rclone_pid.stdout }}
+      when: rclone_pid.rc == 0
+
+    - name: Unmount the directory if mounted
+      shell: umount "{{ mount_dir }}"
+      ignore_errors: yes
+
+
+    - name: Check if mount directory exists
       stat:
-        path: '../doi_database.db'
-      register: db_file_local
-      delegate_to: localhost
-      become: no
+        path: "{{ mount_dir }}"
+      register: mount_dir_stat
 
-    - name: Check if doi_database.db exists on target
-      stat:
-        path: '/opt/citations_finder/doi_database.db'
-      register: db_file_remote
-      become: no
+    - name: Create mount directory
+      file:
+        path: "{{ mount_dir }}"
+        state: directory
+        mode: '0755'
+      when: not mount_dir_stat.stat.exists
 
-#    - name: Compress doi_database.db locally
-#      command: gzip -k -c ../doi_database.db > ./doi_database.db.gz
-#      delegate_to: localhost
-#      become: no
-#      when: db_file_local.stat.exists and not db_file_remote.stat.exists
+    - name: Mount pdf-cloud using rclone with user write permissions and friendly file creation
+      shell: |
+        rclone mount pdf-cloud:citations-finder-pdfs {{ mount_dir }} --default-permissions --allow-other --umask 002 --file-perms 0666 --dir-perms 0777 --uid $(id -u {{default_user}}) --gid $(id -g {{default_user}}) --daemon
+      args:
+        creates: "{{ mount_dir }}/something"
 
-    - name: Copy  doi_database.db to target machine
-      copy:
-        src: '../doi_database.db'
-        dest: '/opt/citations_finder/doi_database.db'
+    - name: Create symbolic link for /opt/citations_finder/pdf
+      file:
+        src: /Volumes/pdf/pdf
+        dest: /opt/citations_finder/pdf
+        state: link
+        force: yes
+
+    - name: Copy config.ini to remote location
+      ansible.builtin.copy:
+        src: ../config.ini
+        dest: /opt/citations_finder/config.ini
         owner: "{{ default_user }}"
         group: "{{ default_user }}"
-      when: db_file_local.stat.exists and not db_file_remote.stat.exists
-      become: no
+        mode: '0644'
 
-#    - name: Remove local compressed doi_database.db
-#      file:
-#        path: './doi_database.db.gz'
-#        state: absent
-#      delegate_to: localhost
-#      become: no
-#      when: db_file_local.stat.exists and not db_file_remote.stat.exists
+    - name: Add keys from pub-keys.txt to authorized_keys
+      ansible.builtin.authorized_key:
+        user: "{{ default_user }}"
+        state: present
+        key: "{{ item }}"
+      with_file:
+        - "pub-keys.txt"
 
-#    - name: Decompress doi_database.db on target
-#      command: gzip -d /opt/citations_finder/doi_database.db.gz
-#      when: db_file_local.stat.exists and not db_file_remote.stat.exists
-#      become: yes
 
+    - name: Copy vm_passwords.yml
+      ansible.builtin.copy:
+        src: vm_passwords.yml.template
+        dest: /opt/citations_finder/vm/vm_passwords.yml
+
+    - name: Update database_url in vm_passwords.yml
+      ansible.builtin.replace:
+        path: /opt/citations_finder/vm/vm_passwords.yml
+        regexp: '^database_url:.*$'
+        replace: 'database_url: "{{ database_url }}"'
+
+    - name: Update database_name in vm_passwords.yml
+      ansible.builtin.replace:
+        path: /opt/citations_finder/vm/vm_passwords.yml
+        regexp: '^database_name:.*$'
+        replace: 'database_name: "{{ database_name }}"'
+
+    - name: Update database_port in vm_passwords.yml
+      ansible.builtin.replace:
+        path: /opt/citations_finder/vm/vm_passwords.yml
+        regexp: '^database_port:.*$'
+        replace: 'database_port: "{{ database_port }}"'
+
+    - name: Update database_password in vm_passwords.yml
+      ansible.builtin.replace:
+        path: /opt/citations_finder/vm/vm_passwords.yml
+        regexp: '^database_password:.*$'
+        replace: 'database_password: "{{ database_password }}"'
+
+    - name: Update database_user in vm_passwords.yml
+      ansible.builtin.replace:
+        path: /opt/citations_finder/vm/vm_passwords.yml
+        regexp: '^database_user:.*$'
+        replace: 'database_user: "{{ database_user }}"'
 
