@@ -118,7 +118,7 @@ class DoiDatabase(Utils):
         """
         skip_crossref = self.config.get_boolean('crossref', 'skip_crossref')
         if skip_crossref:
-            logging.info("Skipping crossref check and download step...")
+            logging.info("Skipping crossref check and doi download step...")
             return
         skip_crossref_precheck = self.config.get_boolean('crossref', 'skip_crossref_precheck')
 

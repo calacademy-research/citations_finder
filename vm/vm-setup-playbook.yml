@@ -163,38 +163,62 @@
         - "pub-keys.txt"
 
 
-    - name: Copy vm_passwords.yml
+    - name: Copy vm_passwords.yml.template
       ansible.builtin.copy:
         src: vm_passwords.yml.template
         dest: /opt/citations_finder/vm/vm_passwords.yml
+
+    - name: Include variables from vm_passwords.yml
+      ansible.builtin.include_vars:
+        file: ./vm_passwords.yml
+
 
     - name: Update database_url in vm_passwords.yml
       ansible.builtin.replace:
         path: /opt/citations_finder/vm/vm_passwords.yml
         regexp: '^database_url:.*$'
-        replace: 'database_url: "{{ database_url }}"'
+        replace: 'database_url: 127.0.0.1'
+
 
     - name: Update database_name in vm_passwords.yml
       ansible.builtin.replace:
         path: /opt/citations_finder/vm/vm_passwords.yml
         regexp: '^database_name:.*$'
-        replace: 'database_name: "{{ database_name }}"'
+        replace: 'database_name: {{ database_name }}'
 
     - name: Update database_port in vm_passwords.yml
       ansible.builtin.replace:
         path: /opt/citations_finder/vm/vm_passwords.yml
         regexp: '^database_port:.*$'
-        replace: 'database_port: "{{ database_port }}"'
+        replace: 'database_port: {{ database_port }}'
 
     - name: Update database_password in vm_passwords.yml
       ansible.builtin.replace:
         path: /opt/citations_finder/vm/vm_passwords.yml
         regexp: '^database_password:.*$'
-        replace: 'database_password: "{{ database_password }}"'
+        replace: 'database_password: {{ database_password }}'
 
     - name: Update database_user in vm_passwords.yml
       ansible.builtin.replace:
         path: /opt/citations_finder/vm/vm_passwords.yml
         regexp: '^database_user:.*$'
-        replace: 'database_user: "{{ database_user }}"'
+        replace: 'database_user: {{ database_user }}'
+
+    - name: Build Docker image
+      community.docker.docker_image:
+        build:
+          path: /opt/citations_finder
+        name: app1
+        source: build
+
+#    - name: Run Docker container
+#      community.docker.docker_container:
+#        name: app1
+#        image: app1
+#        network_mode: host
+#        volumes:
+#          - /opt/citations_finder/config.ini:/app/config.ini
+#          - /opt/citations_finder/vm:/app/vm
+#          - /opt/citations_finder/pdf:/app/pdf
+#        state: started
 

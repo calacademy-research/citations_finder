@@ -197,11 +197,11 @@ class UnpaywallDownloader(Downloader, Utils):
         logging.info(f"Attempting Unpaywall download @{datetime.now()}")
 
         try:
+            if self._is_download_skippable(doi_entry):
+                return False
             if not self._fetch_or_reuse_url(doi_entry):
                 return False
 
-            if self._is_download_skippable(doi_entry):
-                return False
 
             if self.force_update_link_only:
                 return False

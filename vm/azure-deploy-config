@@ -1,6 +1,7 @@
 resourceGroupName='citations-group'
 vmName='citations-vm'
 location='westus'
-vmSize='Standard_DS2_v2' # 1 vCPU, 3.5 GB RAM
+vmSize='Standard_E2s_v3'
+#vmSize='Standard_DS2_v2' # 1 vCPU, 3.5 GB RAM
 image='Ubuntu2204'
 diskSizeGB=128
