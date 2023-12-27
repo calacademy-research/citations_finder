@@ -1,22 +1,51 @@
 #!/bin/bash
 
-# Source variables
+# Source variables and configurations
 source azure-deploy-config
+
+# Initialize Azure CLI session
+az account get-access-token --output none || az login
 
 # Check if running-vms.txt exists and is not empty
 if [ -s running-vms.txt ]; then
     # Read the current counter
     counter=$(<running-vms.txt)
 
-    # Loop to stop each VM
+    # Loop to deallocate each VM and delete their disks
     for ((i=100; i<counter; i++)); do
         uniqueVmName="${vmName}-${i}"
-        echo "Stopping VM: $uniqueVmName"
+        echo "Deallocating and deleting VM: $uniqueVmName"
 
-        # Shutdown VM
+        # Replace this with the command or method to get the VM's IP or hostname
+        IP_ADDRESS=$(az vm list-ip-addresses --resource-group $resourceGroupName --name $uniqueVmName --query "[].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
+
+	      echo found host: $IP_ADDRESS ... purge keys
+        # Remove the VM's SSH key from known_hosts
+        if [ ! -z "$IP_ADDRESS" ]; then
+            echo "Removing SSH key for $IP_ADDRESS from known_hosts..."
+            ssh-keygen -f "/Users/joe/.ssh/known_hosts" -R "$IP_ADDRESS"
+        fi
+
+        # clean it up on admin@collectionsdb, too
+        cleanup_command="ssh-keygen -f ~/.ssh/known_hosts -R $IP_ADDRESS"
+        ssh -t admin@collectionsdb.calacademy.org "$cleanup_command"
+
+        # Deallocate VM
         az vm deallocate --resource-group $resourceGroupName --name $uniqueVmName
+
+        # Delete VM
+        az vm delete --resource-group $resourceGroupName --name $uniqueVmName --yes
+
+        # List and delete associated disks
+        disks=$(az disk list --resource-group $resourceGroupName --query "[?contains(name, '$uniqueVmName')].name" -o tsv)
+        for disk in $disks; do
+            echo "Deleting disk: $disk"
+            az disk delete --resource-group $resourceGroupName --name $disk --yes --no-wait
+        done
     done
-    rm running-vms.txt
+
+    # Reset the counter in running-vms.txt
+    echo "100" > running-vms.txt
 else
     echo "No running VMs found."
 fi
