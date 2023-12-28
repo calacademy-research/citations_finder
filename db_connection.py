@@ -1,6 +1,7 @@
 import logging
 import mysql.connector
 import yaml
+import traceback
 
 
 class DBConnector(object):
@@ -49,47 +50,48 @@ class DBConnection(object):
 
     @classmethod
     def execute_query(cls, query, args=None):
-        """ Execute a SQL query on the database connection.
-
-        This code attempts to create a cursor object for the database connection.
-        If an error occurs, such as a connection timeout, the code logs an error
-        message and creates a new connection before creating the cursor object again.
-        Then code executes the SQL query using the cursor object.
-        If the args parameter is not None, it substitutes the parameter values into
-        the query using placeholder variables. If an error occurs during the
-        query execution, such as a syntax error in the SQL, the code logs a critical
-        error message and raises the error.
-
-
-        :param query: The query to be executed
-        :type query: str
-        :param args: Optional arguments to be substituted in the query, defaults to None
-        :type args: list or None, optional
-        :raises e: Raises an exception if there is an error executing the query
-        :return: The result of the query execution
-        :rtype: Any
         """
-        connection = cls.get_connection()
-        try:
-            cursor = connection.cursor()
-        except Exception as e:
-            logging.error(f"Connection error; recreating connection.")
-            connection = cls.get_connection(new=True)  # Create new connection
-            cursor = connection.cursor()
-        try:
-            if args is None:
-                cursor.execute(query)
-            else:
-                cursor.execute(query, args)
-            if query.strip().upper().startswith("SELECT"):
-                result = cursor.fetchall()
-                return result  # Return results for SELECT queries
-            else:
-                connection.commit()  # Commit for INSERT, UPDATE, DELETE
-        except Exception as e:
-            logging.critical(f"Bad SQL: {e}:\n{query}")
-            raise e
-        result = cursor.fetchall()
-        cursor.close()
-        return result
+        Execute a SQL query with retry mechanism on deadlock.
+
+        :param query: The SQL query
+        :param args: Arguments for the query
+        :return: Query result for SELECT, or None for other types
+        """
+        max_retries = 3
+        retry_delay = 60  # seconds
+
+        for attempt in range(max_retries):
+            connection = cls.get_connection()
+            try:
+                cursor = connection.cursor()
+                if args is None:
+                    cursor.execute(query)
+                else:
+                    cursor.execute(query, args)
+
+                if query.strip().upper().startswith("SELECT"):
+                    result = cursor.fetchall()
+                    cursor.close()
+                    return result
+                else:
+                    connection.commit()
+                    cursor.close()
+                    return None
+            except mysql.connector.errors.InternalError as e:
+                if e.errno == 1213:  # Deadlock error code
+                    logging.warning(
+                        f"Deadlock detected, attempt {attempt + 1} of {max_retries}. Retrying in {retry_delay} seconds.")
+                    time.sleep(retry_delay)
+                else:
+                    raise e
+            except Exception as e:
+                logging.critical(f"Bad SQL: {e}:\n{query}")
+                print(traceback.format_exc())
+
+                cursor.close()
+                raise e
+
+        # If all retries fail, rethrow the last exception
+        raise Exception(f"Failed to execute query after {max_retries} attempts due to deadlock.")
+
 

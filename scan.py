@@ -9,6 +9,7 @@ from pdfminer.high_level import extract_text_to_fp
 from pdfminer.layout import LAParams
 from tabula import read_pdf
 from PyPDF2 import PdfReader
+import threading
 
 
 class Scan:
@@ -199,6 +200,15 @@ class Scan:
             file.write(text)
         self.textfile_path = text_file_path
 
+
+    def _run_converter_with_timeout(self):
+        converter_thread = threading.Thread(target=self._run_converter)
+        converter_thread.start()
+        converter_thread.join(timeout=60)
+        if converter_thread.is_alive():
+            logging.error("PDF conversion timeout; operation exceeded 1 minute.")
+            return False
+        return True
     def _convert_pdf(self, force=False):
         """Checks if a text file corresponding to the DOI object's PDF file
         exists in the specified text directory. If not, it uses the `_run_converter`
@@ -217,7 +227,7 @@ class Scan:
             return False
         if not os.path.exists(doi_textfile_path) or force is True:
             logging.warning(f"    Missing txt file, generating {doi_textfile_path} from {self.doi_object.full_path}")
-            self._run_converter()
+            self._run_converter_with_timeout()
             logging.warning(f"     Generation complete.")
             if not os.path.exists(doi_textfile_path):
                 logging.error("PDF conversion failure; marking as failed and continuing.")
