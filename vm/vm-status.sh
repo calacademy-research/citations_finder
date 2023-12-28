@@ -2,6 +2,9 @@
 
 # Source variables
 source azure-deploy-config
+echo "All active VMs in the resource group '$resourceGroupName':"
+az vm list --resource-group citations-group --show-details --query "[].{Name:name, Status:powerState, PublicIP:network.publicIpAddresses[0].ipAddress}" -o table
+
 runningDockerCount=0
 disabledDockerCount=0
 # Check if running-vms.txt exists and is not empty
@@ -10,11 +13,13 @@ if [ -s running-vms.txt ]; then
     counter=$(<running-vms.txt)
 
     # Loop to check each VM
-    for ((i=100; i<=counter; i++)); do
+    for ((i=100; i<counter; i++)); do
         uniqueVmName="${vmName}-${i}"
         runningDockerCount=0
         disabledDockerCount=0
         disabledDockers=""
+        vmStatus=null
+        ip=null
 
         # Check VM status
         vmStatus=$(az vm get-instance-view --name $uniqueVmName --resource-group $resourceGroupName --query "instanceView.statuses[?code=='PowerState/running']" -o tsv 2>/dev/null)
@@ -23,9 +28,17 @@ if [ -s running-vms.txt ]; then
         if [[ $vmStatus ]]; then
             # Get the IP of the VM
             ip=$(az vm list-ip-addresses --resource-group $resourceGroupName --name $uniqueVmName --query "[].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
-            command="sudo docker ps -a --format '{{.Names}}:{{.Status}}'"
-            # SSH into the VM and get Docker container statuses
-            sshOutput=$(ssh -o StrictHostKeyChecking=no $ip $command)
+        fi
+        if [[ $ip ]]; then
+            sshCommand="ssh -o StrictHostKeyChecking=no $ip"
+
+            sshOutput=$(timeout 40s $sshCommand "sudo docker ps -a --format '{{.Names}}:{{.Status}}'")
+            if [ $? -ne 0 ]; then
+                echo "   SSH command timed out or failed for VM: $uniqueVmName"
+#                vmInsights=$(az monitor metrics list --resource $uniqueVmName --resource-type "Microsoft.Compute/virtualMachines" --resource-group $resourceGroupName --metric "Percentage CPU" --output table)
+#                echo "   VM Insights: $vmInsights"
+                continue
+            fi
 
             # Get free RAM information
             freeRam=$(ssh -o StrictHostKeyChecking=no $ip "free -m | awk '/^Mem:/{print \$4}'" < /dev/null)

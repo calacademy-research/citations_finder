@@ -226,20 +226,24 @@ class DoiDatabase(Utils):
                 logging.info(report.report(journal=issn, summary=False))
             self.download_dois(start_year, end_year, journal=journal, issn=issn)
 
-    def _generate_select_sql(self, start_year, end_year, journal_issn, downloaded):
+    def _generate_select_sql(self, start_year, end_year, journal_issn, downloaded, limit=None, offset=None):
         """Generate an SQL query to select DOI entries from the database -> dois table.
+        Generate an SQL query to select DOI entries from the database -> dois table.
 
         :param start_year: The starting year of the date range for DOI entries selection.
         :type start_year: int
         :param end_year: The ending year of the date range for DOI entries selection.
         :type end_year: int
-        :param journal_issn: The ISSN (International Standard Serial Number) of the journal
-                             for DOI entries filtering.
+        :param journal_issn: The ISSN of the journal for DOI entries filtering.
         :type journal_issn: str
-        :param downloaded: The downloaded status to be used in the selection criteria.
+        :param downloaded: The downloaded status for selection criteria.
                            Can be True, False, or None. If None, the downloaded status
                            is not included in the criteria.
         :type downloaded: bool or None
+        :param limit: The maximum number of rows to return.
+        :type limit: int or None
+        :param offset: The offset of the first row to return.
+        :type offset: int or None
         :return: The SQL query for selecting DOI entries based on the provided criteria.
         :rtype: str
         """
@@ -260,23 +264,38 @@ class DoiDatabase(Utils):
 
         select_dois = f"select * from dois{where_clause}"
 
+        if limit is not None:
+            select_dois += f" LIMIT {limit}"
+
+        if offset is not None:
+            select_dois += f" OFFSET {offset}"
+
         return select_dois
 
-    def get_dois(self, start_year, end_year, journal_issn=None, downloaded=True):
-        """Get DOI entries from the database within the specified date range
-         downloaded can be true, false, or none. Clause will be removed in the "none" case.
+        return select_dois
+
+    def get_dois(self, start_year, end_year, journal_issn=None, downloaded=True, limit=None, offset=None):
+        """
+        Get DOI entries from the database within the specified date range.
+        Downloaded can be true, false, or none. Clause will be removed in the "none" case.
 
         :param start_year: The starting year of the date range.
         :type start_year: int
         :param end_year: The ending year of the date range.
         :type end_year: int
-        :param journal_issn: The ISSN (International Standard Serial Number) of the journal to filter the results, defaults to None.
+        :param journal_issn: The ISSN of the journal to filter the results, defaults to None.
         :type journal_issn: str, optional
+        :param downloaded: The downloaded status to be used in the selection criteria.
+        :type downloaded: bool or None
+        :param limit: The maximum number of rows to return, defaults to None.
+        :type limit: int, optional
+        :param offset: The offset of the first row to return, defaults to None.
+        :type offset: int, optional
         :return: A list of DOI entries that match the specified criteria.
         :rtype: List[DoiEntry]
         """
 
-        sql = self._generate_select_sql(start_year, end_year, journal_issn, downloaded)
+        sql = self._generate_select_sql(start_year, end_year, journal_issn, downloaded, limit, offset)
         dois = DoiFactory(sql).dois
         return dois
 

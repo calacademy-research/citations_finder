@@ -25,7 +25,7 @@ vmStatus=$(az vm get-instance-view --name $uniqueVmName --resource-group $resour
 # If VM is running, retrieve and print IP, then exit
 if [[ $vmStatus ]]; then
     ip=$(az vm list-ip-addresses --resource-group $resourceGroupName --name $uniqueVmName --query "[].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
-    echo $ip
+    echo Already running: $ip
     exit 0
 fi
 

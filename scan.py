@@ -1,11 +1,15 @@
 import re
-import subprocess
 import os
 from config import Config
-from shutil import which
 from db_connection import DBConnection
 from doi_entry import DoiFactory
 import logging
+from io import StringIO
+from pdfminer.high_level import extract_text_to_fp
+from pdfminer.layout import LAParams
+from tabula import read_pdf
+from PyPDF2 import PdfReader
+
 
 class Scan:
     # TODO: this only encompasses a few of the tags we end up scanning for
@@ -24,7 +28,7 @@ class Scan:
         :type doi_string: str, optional
         :raises NotImplementedError: If neither doi_object nor doi_string is provided.
         :raises RecordNotFoundException: If the DOI query does not yield the expected results.
-        """        
+        """
         self.collection_tag_regex = self._get_collection_tag_regex()
         self.text_directory = self.config.get_string('scan', 'scan_text_directory')
         if not os.path.exists(self.text_directory):
@@ -73,7 +77,7 @@ class Scan:
         :type write_scan_lines: bool, optional
         :param clear_existing_records: If True, clear existing records before writing, defaults to False
         :type clear_existing_records: bool, optional
-        """        
+        """
         if clear_existing_records:
             Scan.clear_db_entry(self.doi_string)
         sql_insert = f"""replace into scans (doi, textfile_path,score,cannot_convert,title) VALUES (%s,%s,%s,%s,%s)"""
@@ -98,13 +102,12 @@ class Scan:
         :param doi_object: The DOI object containing information about the associated document.
         :type doi_object: DOIObjectType  # Replace 'DOIObjectType' with the actual type of the DOI object
         :raises FileNotFoundError: If the PDF file associated with the DOI is missing.
-        """        
+        """
         self.textfile_path = None
         self.broken_converter = None
-        if doi_object.full_path is None:
-            if doi_object.check_file() is False:
-                raise FileNotFoundError(
-                    f"Missing PDF for doi {doi_object.doi}. path would be {doi_object.generate_file_path()} title: {doi_object.get_title()}")
+        if doi_object.check_file() is False:
+            raise FileNotFoundError(
+                f"Missing PDF for doi {doi_object.doi}. path would be {doi_object.generate_file_path()} title: {doi_object.get_title()}")
 
         self.doi_object = doi_object
         self.doi_string = doi_object.doi
@@ -121,23 +124,67 @@ class Scan:
         str = f"{self.score}   {self.doi_string}:({self.doi_object.get_journal()})  {self.doi_object.details['title'][0]}"
         return str
 
+
+    def extract_text_from_pdf(self, pdf_path):
+        logging.getLogger('pdfminer').setLevel(logging.CRITICAL)
+
+        output = StringIO()
+        with open(pdf_path, 'rb') as file:
+            laparams = LAParams(line_overlap=0.3, char_margin=2.0, line_margin=0.5, word_margin=0.1, boxes_flow=0.5)
+            extract_text_to_fp(file, output, laparams=laparams)
+        text = output.getvalue()
+        output.close()
+        return re.sub(r'\s+', ' ', text).replace('\n', ' ').replace('\-\s+', '')
+
+    def extract_tables_from_pdf(self, pdf_path):
+        all_tables = []
+        try:
+            # Determine the number of pages in the PDF
+            with open(pdf_path, 'rb') as file:
+                pdf_reader = PdfReader(file)
+                total_pages = len(pdf_reader.pages)
+
+            # Iterate through each page to extract tables
+            for page in range(1, total_pages + 1):
+                try:
+                    tables = read_pdf(pdf_path, pages=page, multiple_tables=True)
+                    all_tables.extend(tables)
+                except Exception as page_error:
+                    logging.error(f"Error extracting tables on page {page}: {page_error}")
+
+            return all_tables
+
+        except Exception as e:
+            logging.error(f"Error in processing PDF {pdf_path}: {e}")
+            return []
+
+        return all_tables
+
+    def fix_spaced_headings(self, text, headings):
+        for heading in headings:
+            spaced_pattern = r'\s*'.join(char for char in heading)
+            pattern = re.compile(r'\b' + spaced_pattern + r'\b', re.IGNORECASE)
+            text = pattern.sub(heading, text)
+        return text
+
     def _run_converter(self):
-        """Converts a PDF file to a text file using the pdftotext utility.
+        pdf_path = f"{os.getcwd()}/{self.doi_object.full_path}"
+        text = self.extract_text_from_pdf(pdf_path)
+        tables = self.extract_tables_from_pdf(pdf_path)
 
-        """        
-        pdf_to_text_command = "pdftotext"
+        text.join(table.to_string(index=False, header=True) for table in
+                          tables) if tables else "No tables found or an error occurred."
 
-        # Check if pdftotext is available in the system's PATH
-        pdftotext_path = which(pdf_to_text_command)
-        if pdftotext_path is None:
-            raise Exception("pdftotext command not found. Make sure it's installed and available in PATH.")
+        text = self.fix_spaced_headings(text,
+                                        ["ACKNOWLEDGMENTS", "INTRODUCTION", "ABSTRACT", "CONCLUSION", "REFERENCES",
+                                         "METHODS", "RESULTS", "DISCUSSION", "LITERATURE REVIEW", "BACKGROUND",
+                                         "RESEARCH PAPER","literature cited", "ЛИТЕРАТУРА"])
 
-        pwd = os.getcwd()
         filename = self.doi_object.get_filename_from_doi_entry()
         txt_file = f"{self.text_directory}/{filename.strip('.pdf')}.txt"
 
-        pdf_file = f"{pwd}/{self.doi_object.full_path}"
-        subprocess.call([pdf_to_text_command, pdf_file, txt_file])
+        with open(txt_file, 'w') as file:
+            file.write(text)
 
     def _convert_pdf(self, force=False):
         """Checks if a text file corresponding to the DOI object's PDF file
@@ -149,15 +196,16 @@ class Scan:
         :type force: bool, optional
         :return: True if the conversion is successful or the text file already exists, False otherwise
         :rtype: bool
-        """        
+        """
         doi_basename = os.path.basename(self.doi_object.full_path)
         doi_basename = doi_basename.rsplit(".", 1)[0]
         doi_textfile = os.path.join(self.text_directory, doi_basename + ".txt")
         if self.broken_converter:
             return False
         if not os.path.exists(doi_textfile) or force is True:
-            logging.warning(f"missing txt file, generating {doi_textfile}")
+            logging.warning(f"    Missing txt file, generating {doi_textfile} from {self.doi_object.full_path}")
             self._run_converter()
+            logging.warning(f"     Generation complete.")
             if not os.path.exists(doi_textfile):
                 logging.error("PDF conversion failure; marking as failed and continuing.")
                 self.broken_converter = True
@@ -174,7 +222,7 @@ class Scan:
 
         :return: A regular expression pattern for collection tag matching.
         :rtype: str
-        """        
+        """
         institution_root_name = eval(cls.config.get_string('scan_search_keys', 'institution_root_name'))
         collections_with_id_strings = cls.config.get_list('scan_search_keys', 'collections_with_id_strings')
         collection_tag_regex = f"(?i)(([ \(\[])+|^){institution_root_name}"
@@ -191,7 +239,7 @@ class Scan:
 
         :return: A list of tuples containing processed name variations and scores
         :rtype: list
-        """        
+        """
         collection_manager_names = cls.config.get_list('scan_search_keys', 'collection_manager_names')
         all_name_variations = []
         for test_string, score in collection_manager_names:
@@ -231,7 +279,7 @@ class Scan:
 
         :return: A list of scored strings for matching as defined in config.ini
         :rtype: list
-        """        
+        """
         # Test that hypehens and colons are parsed correctly in the
         # reguar expression sets
         string_set_pre_reference = cls.config.get_list('scan_search_keys', 'scored_strings')
@@ -255,7 +303,7 @@ class Scan:
         :type clear_existing_records: bool, optional
         :return: True if scanning is successful and results are logged, False otherwise
         :rtype: bool
-        """        
+        """
         # logging.debug(f"Scanning: {self.textfile_path}")
         if self._convert_pdf() is False:
             # logging.warning(f"Missing PDF, not scanning: {self.textfile_path}")
@@ -297,7 +345,7 @@ class Scan:
         :type string_set: set(tuple(str, int))
         :param ok_after_references: Indicates whether scoring is allowed after references, defaults to False.
         :type ok_after_references: bool, optional
-        """        
+        """
         for test_string, score in string_set:
             test_string = test_string.lower()
             # logging.info(f"Scanning test string: {test_string}")
@@ -327,7 +375,7 @@ class Scan:
         :type do_score: bool, optional
         :return: A list of matched results found in the text content
         :rtype: list[str]
-        """        
+        """
         results = []
 
         # logging.debug(f"Scanning with regex: {regex}")
@@ -373,7 +421,7 @@ class Scan:
                             cur_line = cur_line + f"{next_words[id]}"
                             hyphen = False
 
-                # then performing the actual search operation.
+                    # then performing the actual search operation.
                     result = re.search(regex, cur_line)
                     if result is not None:
                         # logging.debug(".", end='')

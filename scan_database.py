@@ -13,6 +13,7 @@ class ScanDatabase(Utils):
     def __init__(self, doi_db, reset_scan_database=False):
         super().__init__()
         if reset_scan_database:
+            logging.info ("Resetting scan database...")
             self.create_tables(reset_scan_database)
         self.doi_db = doi_db
 
@@ -93,22 +94,38 @@ class ScanDatabase(Utils):
 
         :param directory: The directory where the scanned PDFs should be saved, defaults to "./".
         :type directory: str, optional
-        """        
-        if not rescore:
-            sql = f"""SELECT * FROM dois LEFT JOIN scans ON dois.doi = scans.doi 
-                WHERE downloaded = 1 and scans.doi IS NULL
-                and {self.sql_year_restriction(start_year, end_year)}"""
-            dois = DoiFactory(sql).dois
-        else:
-            dois = self.doi_db.get_dois(start_year=start_year, end_year=end_year, journal_issn=None, downloaded=True)
-        # multiprocessing verison:
-        # import multiprocessing as mp
-        # pool = mp.Pool(mp.cpu_count())
-        # results = pool.map(self.do_scan,dois)
+        """
 
-        # single process version
-        for doi_entry in dois:
-            self.do_scan(doi_entry)
+        batch_size = 100
+        offset = 0
+        total_dois_processed = 0
+
+        logging.info("  Loading entries from database...")
+
+        while True:
+            if not rescore:
+                sql = self._generate_select_sql(start_year, end_year, None, True, batch_size, offset)
+                dois = DoiFactory(sql).dois
+            else:
+                dois = self.doi_db.get_dois(start_year=start_year, end_year=end_year, journal_issn=None,
+                                            downloaded=True, limit=batch_size, offset=offset)
+
+            if not dois:
+                break  # No more DOIs to process
+
+            # Processing DOIs
+            for doi_entry in dois:
+                logging.debug (f"  Scanning doi: {doi_entry.doi}")
+                try:
+                    self.do_scan(doi_entry)
+                except FileNotFoundError as e:
+                    logging.error(f"File not found: {e}")
+
+            total_dois_processed += len(dois)
+            offset += batch_size
+            logging.info(f"Processed {total_dois_processed} DOIs so far")
+
+        logging.info("All DOIs processed")
 
 
     def scan_for_specimen_ids(self, reset_tables=False):

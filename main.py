@@ -158,8 +158,11 @@ def setup():
     if config.get_boolean('download', 'enable_paper_download'):
         print ("DOWNLOADING PAPERS")
         db.download_dois_by_journal_size(download_start_year, download_end_year)
+    else:
+        print ("Skipping downloading papers...")
 
     if config.get_boolean('scan', 'enabled'):
+        print("STARTING SCAN")
         scan_start_year = config.get_int('scan', 'scan_start_year')
         scan_end_year = config.get_int('scan', 'scan_end_year')
         rescore = config.get_boolean('scan', 'rescore')
@@ -168,8 +171,11 @@ def setup():
         scan_db.scan_pdfs(scan_start_year, scan_end_year, rescore=rescore)
 
         if config.get_boolean('scan_for_specimen_ids', 'enabled'):
-            reset_scan_database = config.get_boolean('scan', 'reset_scan_database')
+            print("Scan for specimen ids...")
 
+            reset_scan_database = config.get_boolean('scan_for_specimen_ids', 'reset_scan_database')
+            if reset_scan_database:
+                print("Resetting specimen id scan tables...")
             scan_db.scan_for_specimen_ids(reset_tables=reset_scan_database)
 
     validate_enabled = config.get_boolean('validate', 'enabled')
