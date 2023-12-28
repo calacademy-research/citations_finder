@@ -2,6 +2,7 @@ import logging
 import mysql.connector
 import yaml
 import traceback
+import time
 
 
 class DBConnector(object):

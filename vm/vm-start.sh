@@ -76,6 +76,7 @@ if [[ $vmStatus ]]; then
           -v /opt/citations_finder/vm:/app/vm \
           -v /opt/citations_finder/pdf:/app/pdf \
           --name app$i app1"
+        sleep 90
     done
 else
     echo "VM $uniqueVmName is not running or IP address could not be retrieved."
