@@ -3,6 +3,7 @@ from scan import Scan
 from utils_mixin import Utils
 from doi_database import DoiFactory
 import logging
+import random
 
 class ScanDatabase(Utils):
 
@@ -96,7 +97,7 @@ class ScanDatabase(Utils):
         :type directory: str, optional
         """
 
-        batch_size = 100
+        batch_size = 500
         offset = 0
         total_dois_processed = 0
 
@@ -112,6 +113,7 @@ class ScanDatabase(Utils):
 
             if not dois:
                 break  # No more DOIs to process
+            random.shuffle(dois)
 
             # Processing DOIs
             for doi_entry in dois:

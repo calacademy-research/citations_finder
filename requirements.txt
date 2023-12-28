@@ -27,3 +27,7 @@ six
 numpy
 unpywall
 tabulate
+pdfminer.six
+tabula-py
+PyPDF2
+random

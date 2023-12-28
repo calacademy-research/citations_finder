@@ -124,7 +124,6 @@ class Scan:
         str = f"{self.score}   {self.doi_string}:({self.doi_object.get_journal()})  {self.doi_object.details['title'][0]}"
         return str
 
-
     def extract_text_from_pdf(self, pdf_path):
         logging.getLogger('pdfminer').setLevel(logging.CRITICAL)
 
@@ -167,24 +166,38 @@ class Scan:
             text = pattern.sub(heading, text)
         return text
 
+    def _get_textfile_path(self):
+        issn = self.doi_object.issn
+        year = self.doi_object.get_date().year
+        doi_basename = os.path.basename(self.doi_object.full_path)
+        doi_basename = doi_basename.rsplit(".", 1)[0]
+        return os.path.join(self.text_directory, issn, str(year), doi_basename + ".txt")
+
+
+
+    def _create_textfile_path(self, path):
+        directory = os.path.dirname(path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
     def _run_converter(self):
         pdf_path = f"{os.getcwd()}/{self.doi_object.full_path}"
         text = self.extract_text_from_pdf(pdf_path)
         tables = self.extract_tables_from_pdf(pdf_path)
 
         text.join(table.to_string(index=False, header=True) for table in
-                          tables) if tables else "No tables found or an error occurred."
+                  tables) if tables else "No tables found or an error occurred."
 
         text = self.fix_spaced_headings(text,
                                         ["ACKNOWLEDGMENTS", "INTRODUCTION", "ABSTRACT", "CONCLUSION", "REFERENCES",
                                          "METHODS", "RESULTS", "DISCUSSION", "LITERATURE REVIEW", "BACKGROUND",
-                                         "RESEARCH PAPER","literature cited", "ЛИТЕРАТУРА"])
+                                         "RESEARCH PAPER", "literature cited", "ЛИТЕРАТУРА"])
 
-        filename = self.doi_object.get_filename_from_doi_entry()
-        txt_file = f"{self.text_directory}/{filename.strip('.pdf')}.txt"
-
-        with open(txt_file, 'w') as file:
+        text_file_path = self._get_textfile_path()
+        self._create_textfile_path(text_file_path)
+        with open(text_file_path, 'w') as file:
             file.write(text)
+        self.textfile_path = text_file_path
 
     def _convert_pdf(self, force=False):
         """Checks if a text file corresponding to the DOI object's PDF file
@@ -197,21 +210,21 @@ class Scan:
         :return: True if the conversion is successful or the text file already exists, False otherwise
         :rtype: bool
         """
-        doi_basename = os.path.basename(self.doi_object.full_path)
-        doi_basename = doi_basename.rsplit(".", 1)[0]
-        doi_textfile = os.path.join(self.text_directory, doi_basename + ".txt")
+
+        doi_textfile_path = self._get_textfile_path()
+
         if self.broken_converter:
             return False
-        if not os.path.exists(doi_textfile) or force is True:
-            logging.warning(f"    Missing txt file, generating {doi_textfile} from {self.doi_object.full_path}")
+        if not os.path.exists(doi_textfile_path) or force is True:
+            logging.warning(f"    Missing txt file, generating {doi_textfile_path} from {self.doi_object.full_path}")
             self._run_converter()
             logging.warning(f"     Generation complete.")
-            if not os.path.exists(doi_textfile):
+            if not os.path.exists(doi_textfile_path):
                 logging.error("PDF conversion failure; marking as failed and continuing.")
                 self.broken_converter = True
                 return False
-        if os.path.exists(doi_textfile):
-            self.textfile_path = doi_textfile
+        if os.path.exists(doi_textfile_path):
+            self.textfile_path = doi_textfile_path
         return True
 
     @classmethod
