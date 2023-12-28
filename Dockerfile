@@ -22,6 +22,15 @@ RUN wget -q "https://github.com/mozilla/geckodriver/releases/download/v0.33.0/ge
     tar -xzf /tmp/geckodriver.tar.gz -C /usr/local/bin && \
     rm /tmp/geckodriver.tar.gz
 
+# Install OpenJDK 11
+RUN apt-get update && \
+    apt-get install -y openjdk-11-jdk && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set the JAVA_HOME environment variable
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
+
+
 # Set the working directory in the container
 WORKDIR /app
 
