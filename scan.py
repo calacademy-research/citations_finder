@@ -204,9 +204,9 @@ class Scan:
     def _run_converter_with_timeout(self):
         converter_thread = threading.Thread(target=self._run_converter)
         converter_thread.start()
-        converter_thread.join(timeout=60)
+        converter_thread.join(timeout=240)
         if converter_thread.is_alive():
-            logging.error("PDF conversion timeout; operation exceeded 1 minute.")
+            logging.error("PDF conversion timeout; operation exceeded 4 minutes.")
             return False
         return True
     def _convert_pdf(self, force=False):

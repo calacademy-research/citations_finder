@@ -211,14 +211,4 @@
         name: app1
         source: build
 
-#    - name: Run Docker container
-#      community.docker.docker_container:
-#        name: app1
-#        image: app1
-#        network_mode: host
-#        volumes:
-#          - /opt/citations_finder/config.ini:/app/config.ini
-#          - /opt/citations_finder/vm:/app/vm
-#          - /opt/citations_finder/pdf:/app/pdf
-#        state: started
 
