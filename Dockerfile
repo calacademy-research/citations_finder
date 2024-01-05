@@ -48,7 +48,6 @@ COPY config.py /app/
 COPY copyout.py /app/
 COPY crossref_journal_entry.py /app/
 COPY database_report.py /app/
-COPY database_scan.py /app/
 COPY db_connection.py /app/
 COPY doi_database.py /app/
 COPY doi_entry.py /app/
