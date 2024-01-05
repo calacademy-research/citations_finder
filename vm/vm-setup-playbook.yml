@@ -204,11 +204,30 @@
         regexp: '^database_user:.*$'
         replace: 'database_user: {{ database_user }}'
 
+
+    - name: Create a 30GB swap file
+      command: fallocate -l 30G /swapfile2
+
+    - name: Set correct permissions for the swap file
+      file:
+        path: /swapfile2
+        mode: 0600
+
+    - name: Set up the swap space
+      command: mkswap /swapfile2
+
+    - name: Enable swap space
+      command: swapon /swapfile2
+
+    - name: Ensure swap space is enabled on reboot
+      lineinfile:
+        path: /etc/fstab
+        line: '/swapfile2 none swap sw 0 0'
+        create: yes
+
     - name: Build Docker image
       community.docker.docker_image:
         build:
           path: /opt/citations_finder
-        name: app1
+        name: citations_finder
         source: build
-
-

@@ -46,7 +46,6 @@ RUN pip install -r requirements.txt
 COPY collection_base.py /app/
 COPY config.py /app/
 COPY copyout.py /app/
-COPY crossref_downloader.py /app/
 COPY crossref_journal_entry.py /app/
 COPY database_report.py /app/
 COPY database_scan.py /app/
@@ -55,7 +54,6 @@ COPY doi_database.py /app/
 COPY doi_entry.py /app/
 COPY downloader.py /app/
 COPY downloaders.py /app/
-COPY extract_collection_ids.py /app/
 COPY journal_finder.py /app/
 COPY known_good_papers.py /app/
 COPY main.py /app/
