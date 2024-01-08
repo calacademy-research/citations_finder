@@ -296,9 +296,13 @@ class DoiEntry(Utils):
         if os.path.exists(filename):
             self.full_path = filename
             self.downloaded = True
-            # logging.debug(f"Found paper for doi {self.doi} at {self.full_path}")
+            logging.debug(f"Found paper for doi {self.doi} at {self.full_path}")
             return True
         else:
+            if self.downloaded is True:
+                logging.debug(f"Missing paper marked as present! updating {self.doi} at {self.full_path}")
+
+            self.full_path = None
             self.downloaded = False
             return False
 

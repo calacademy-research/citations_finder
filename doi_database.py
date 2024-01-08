@@ -313,7 +313,8 @@ class DoiDatabase(Utils):
         :type start_year: int
         :param end_year: The ending year of the date range.
         :type end_year: int
-        """        
+        """
+        logging.info("Loading dois to check for files..")
         dois = self.get_dois(start_year, end_year, downloaded=None)
         total_dois = len(dois)
         logging.info(f"Checking paths for {total_dois} DOIs... ")
