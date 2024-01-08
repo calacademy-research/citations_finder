@@ -4,4 +4,4 @@ location='westus'
 vmSize='Standard_E4a_v4'
 #vmSize='Standard_DS2_v2' # 1 vCPU, 3.5 GB RAM
 image='Ubuntu2204'
-diskSizeGB=128
+diskSizeGB=256
