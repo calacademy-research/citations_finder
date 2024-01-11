@@ -322,8 +322,18 @@ class DoiDatabase(Utils):
         for index, doi_entry in enumerate(dois, start=1):
             if index % 1000 == 0 or index == total_dois:
                 logging.info(f"Processed {index}/{total_dois} DOIs.")
-            if doi_entry.downloaded != doi_entry.check_file():
-                logging.info(f"download flag {doi_entry.downloaded} does not match status {doi_entry.check_file()}, updating... ")
+            old_downloaded = doi_entry.get_downloaded_status()
+            if doi_entry.get_downloaded_status() != doi_entry.check_and_update_file_path():
+                if doi_entry.get_downloaded_status():
+                    if index % 80 == 0:
+                        print(".\n", end="")
+                    else:
+                        print(".", end="")
+                else:
+                    if index % 80 == 0:
+                        print("x\n", end="")
+                    else:
+                        print("x", end="")
                 doi_entry.update_database()
 
     # Ensures that all DOIs in the database have associated files

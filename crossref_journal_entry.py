@@ -4,24 +4,19 @@ import json
 
 class CrossrefJournalEntry():
     def __init__(self, json_details):
-        self.details = json_details
         self.doi = json_details['DOI']
         self.title = json_details['title'][0]
         if not self._check_exists():
             self._insert_database()
 
     def _insert_database(self):
-        json_string = json.dumps(self.details)
-        clean_details = json_string.replace('\'', '\\')
         sql_insert = f"""INSERT INTO crossref_journal_data (doi,
-                                            title,
-                                            details)
-                               VALUES (%s,%s,%s)
+                                            title)
+                               VALUES (%s,%s)
                                """
 
         args = [self.doi,
-                self.title,
-                clean_details]
+                self.title]
         DBConnection.execute_query(sql_insert, args)
 
     def _check_exists(self):
@@ -59,7 +54,6 @@ class CrossrefJournalEntry():
                                     (
                                         doi     varchar(255) not null
                                             primary key,
-                                        title   varchar(1024) not null,
-                                        details mediumtext
+                                        title   varchar(1024) not null
                                     );"""
         DBConnection.execute_query(sql_create_database_table)

@@ -79,7 +79,7 @@ class Downloader(ABC, Utils):
         # download by sending a http request, if url isnt a html
         if 'html' not in r.headers['Content-Type']:
             logging.warning(f"not html, downloading: {r.headers['Content-Type']} {url}")
-            new_directory = os.path.join(path, doi_entry.issn, str(doi_entry.date.year))
+            new_directory = os.path.join(path, doi_entry.issn, str(doi_entry.published_date.year))
             if not os.path.exists(new_directory):
                 print(f"Creating new PDF directory: {new_directory}")
                 os.makedirs(new_directory)
@@ -211,7 +211,7 @@ class Downloader(ABC, Utils):
             # Construct the full path to the new file
             destination_path = os.path.join(pdf_directory,
                                             doi_entry.issn,
-                                            str(doi_entry.date.year),
+                                            str(doi_entry.published_date.year),
                                             Utils.get_filename_from_doi_string(doi_entry.doi))
 
             # copy the existing file to the new file name

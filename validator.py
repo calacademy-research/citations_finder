@@ -151,7 +151,7 @@ class Match(Utils):
         # DBConnection.execute_query(sql)
         if digital_only is not None:
             self.digital_only = digital_only
-        sql = f""" replace into matches (doi,collection,ignore,date_added,notes,digital_only) values (%s,%s,%s,%s,%s,%s)"""
+        sql = f""" replace into matches (doi,collection,skip,date_added,notes,digital_only) values (%s,%s,%s,%s,%s,%s)"""
         args = [self.doi, collection, ignore, datetime.now(), self.notes, self.digital_only]
         DBConnection.execute_query(sql, args)
 
@@ -163,7 +163,7 @@ class Validator(Utils):
         self.create_tables(reset_matches_database=reset_matches_database)
 
     def get_matched_paper_dois(self):
-        sql = f"""select doi from matches where ignore=FALSE"""
+        sql = f"""select doi from matches where skip=FALSE"""
         results = DBConnection.execute_query(sql)
         return [x[0] for x in results]
 
@@ -186,7 +186,7 @@ class Validator(Utils):
                                             doi          varchar(255)       not null
                                                 primary key,
                                             collection   varchar(1024)       null,
-                                            `ignore`     tinyint(1) null,
+                                            `skip`     tinyint(1) null,
                                             date_added   date       null,
                                             notes        varchar(8192)       null,
                                             digital_only tinyint(1) null
@@ -198,7 +198,7 @@ class Validator(Utils):
     def copy_matches(self, target_dir):
         sql = """select dois.doi, dois.full_path, dois.published_date from dois,matches,scans
                                     where
-                                    matches.doi = dois.doi and matches.ignore=FALSE"""
+                                    matches.doi = dois.doi and matches.skip=FALSE"""
         results = DBConnection.execute_query(sql)
         for result in results:
             doi = result[0]

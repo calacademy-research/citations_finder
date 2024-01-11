@@ -37,28 +37,20 @@ class DoiFactory:
         for cur_doi_json in doi_sql_results:
             doi = cur_doi_json[0]
             issn = cur_doi_json[1]
+            published_date = cur_doi_json[2]
             journal_title = cur_doi_json[3]
             downloaded = cur_doi_json[4]
-            details = cur_doi_json[5]
-            full_path = cur_doi_json[6]
-
+            full_path = cur_doi_json[5]
+            article_title = cur_doi_json[6]
             new_doi = DoiEntry()
 
-            try:
-                new_doi.details = json.loads(details)
-            except json.JSONDecodeError:
-                # Handle JSON parsing error
-                print(f"Invalid JSON, skipping and removing DOI: {doi}: {details}")
-                sql_delete = "DELETE FROM dois WHERE doi = %s"
-                params = [doi]
-                DBConnection.execute_query(sql_delete, params)
-                continue
             new_doi.doi = doi
             new_doi.issn = issn
-            new_doi.date = new_doi.get_date()
+            new_doi.published_date = published_date
             new_doi.journal_title = journal_title
             new_doi.downloaded = downloaded
             new_doi.full_path = full_path
+            new_doi.article_title = article_title
             results.append(new_doi)
         self.dois = results
 
@@ -110,14 +102,13 @@ class DoiEntry(Utils):
         """
         self.issn = doi_details['ISSN'][0]
         self.doi = doi_details['DOI']
-        self.details = doi_details
         # should be duplicate of ISSN reference, but we'll leave it for now
         self.journal_title = doi_details['container-title'][0]
         # logging.info(f"attempting DOI with New date: {self.get_date()}")
-
+        self.article_title = doi_details['title'][0]
         if self._check_exists():
             raise EntryExistsException(self.doi)
-        self.date = self.get_date()
+        self.published_date = self._get_date(doi_details)
         if doi_details['type'] == 'journal':
             raise TypeError("DOI type is 'journal', not 'journal-article'.")
         if doi_details['type'] != "journal-article":
@@ -158,8 +149,8 @@ class DoiEntry(Utils):
                                           published_date date           not null,
                                           journal_title  varchar(1024)           not null,
                                           downloaded     tinyint(1)     not null,
-                                          details        mediumtext null,
-                                          full_path      varchar(2048)           null
+                                          full_path      varchar(2048)           null,
+                                          article_title  varchar(4096) null
                                     );"""
 
 
@@ -179,17 +170,16 @@ class DoiEntry(Utils):
                 journal_title = %s,
                 downloaded = %s,
                 full_path = %s,
-                details = %s
+                article_title = %s
             WHERE doi = "{self.doi}"
         """
 
         args = [self.issn,
-                self.date,
+                self.published_date,
                 self.journal_title,
                 self.downloaded,  # Convert boolean to 1 or 0
                 self.full_path,
-
-                json.dumps(self.details)]
+                self.article_title]
         # logging.info(f"SQL: {sql_update}")
         DBConnection.execute_query(sql_update, args)
 
@@ -200,17 +190,18 @@ class DoiEntry(Utils):
                                             journal_title,
                                             downloaded,
                                             full_path,
-                                            details)
+                                            article_title
+                                            )
                         VALUES (%s, %s, %s, %s, %s, %s, %s)                
         """
 
         args = [self.doi,
                 self.issn,
-                self.date,
+                self.published_date,
                 self.journal_title,
                 self.downloaded,  # Convert boolean to 1 or 0
                 self.full_path,
-                json.dumps(self.details)
+                self.article_title
                 ]
 
 
@@ -226,6 +217,9 @@ class DoiEntry(Utils):
         :rtype: str
         """        
         return self.journal_title
+
+    def get_downloaded_status(self):
+        return self.downloaded != 0
 
     def _get_date_parent(self, id_string, details):
         if id_string in details:
@@ -245,28 +239,22 @@ class DoiEntry(Utils):
         return results
 
     def get_date(self):
-        if 'journal-issue' in self.details and 'published-online' in self.details['journal-issue']:
-            return self._get_date_parent('published-online', self.details['journal-issue'])
-        if 'journal-issue' in self.details and 'published-print' in self.details['journal-issue']:
-            return self._get_date_parent('published-print', self.details['journal-issue'])
-        elif 'published-online' in self.details:
-            return self._get_date_parent('published-online', self.details)
-        elif 'issued' in self.details:
-            return self._get_date_parent('issued', self.details)
-        elif 'deposited' in self.details:
-            return self._get_date_parent('deposited', self.details)
+        return self.published_date
+
+    def _get_date(self,doi_details):
+        if 'journal-issue' in doi_details and 'published-online' in doi_details['journal-issue']:
+            return self._get_date_parent('published-online', doi_details['journal-issue'])
+        if 'journal-issue' in doi_details and 'published-print' in doi_details['journal-issue']:
+            return self._get_date_parent('published-print', doi_details['journal-issue'])
+        elif 'published-online' in doi_details:
+            return self._get_date_parent('published-online', doi_details)
+        elif 'issued' in doi_details:
+            return self._get_date_parent('issued', doi_details)
+        elif 'deposited' in doi_details:
+            return self._get_date_parent('deposited', doi_details)
         else:
             raise ValueError(f"Bad date format: {self.doi}")
 
-    def get_issn_list(self):
-        if self.details is None:
-            return None
-        if 'issn-type' not in self.details:
-            return None
-        retval = []
-        for issn in self.details['issn-type']:
-            retval.append(issn['value'])
-        return retval
 
     def generate_file_path(self, path=None):
         """Generates the full file path for saving the generated papers.
@@ -278,11 +266,11 @@ class DoiEntry(Utils):
         :rtype: str
         """        
         if path is None:
-            path = os.path.join(self.PDF_DIRECTORY, self.issn, str(self.date.year))
+            path = os.path.join(self.PDF_DIRECTORY, self.issn, str(self.published_date.year))
         filename = os.path.join(path, self.get_filename_from_doi_entry())
         return filename
 
-    def check_file(self, path=None):
+    def check_and_update_file_path(self, path=None):
         """Check whether designated file already exists in path. If so, 
         return True and update self. If otherwise, return False and
         update self.
@@ -296,11 +284,11 @@ class DoiEntry(Utils):
         if os.path.exists(filename):
             self.full_path = filename
             self.downloaded = True
-            logging.debug(f"Found paper for doi {self.doi} at {self.full_path}")
+            # logging.debug(f"Found paper for doi {self.doi} at {self.full_path}")
             return True
         else:
-            if self.downloaded is True:
-                logging.debug(f"Missing paper marked as present! updating {self.doi} at {self.full_path}")
+            # if self.downloaded is True:
+            #     logging.debug(f"Missing paper marked as present! updating {self.doi} at {self.full_path}")
 
             self.full_path = None
             self.downloaded = False
@@ -313,28 +301,29 @@ class DoiEntry(Utils):
             return ''
 
     def get_title(self):
-        return self.details['title'][0]
+        return self.journal_title
 
-    def __str__(self):
-        """Return a string representation of the DoiEntry object.
-
-        :return: A formatted string representation of the object.
-        :rtype: str
-        """        
-        str = ""
-        str += f"  DOI: {self.doi}\n"
-
-        if self.details is not None:
-            if 'title' in self.details:
-                str += f"  Title: {self.details['title'][0]}\n"
-            else:
-                str += "\n"
-            if 'link' in self.details:
-                str += f"  Link: {self.details['link'][0]['URL']}\n"
-            if 'URL' in self.details:
-                str += f"  URL: {self.details['URL']}\n"
-            if 'created' in self.details:
-                str += f"  Date: {self.get_doi_date_string(self.details)}\n"
+    # Scream test - delete if unused
+    # def __str__(self):
+    #     """Return a string representation of the DoiEntry object.
+    #
+    #     :return: A formatted string representation of the object.
+    #     :rtype: str
+    #     """
+    #     str = ""
+    #     str += f"  DOI: {self.doi}\n"
+    #
+    #     if self.details is not None:
+    #         if 'title' in self.details:
+    #             str += f"  Title: {self.details['title'][0]}\n"
+    #         else:
+    #             str += "\n"
+    #         if 'link' in self.details:
+    #             str += f"  Link: {self.details['link'][0]['URL']}\n"
+    #         if 'URL' in self.details:
+    #             str += f"  URL: {self.details['URL']}\n"
+    #         if 'created' in self.details:
+    #             str += f"  Date: {self.get_doi_date_string(self.details)}\n"
 
         if self.full_path is not None:
             str += f"  File path: {self.full_path}\n"

@@ -147,7 +147,7 @@ class ScanDatabase(Utils):
                                             identifier varchar(1024)
                                         ); """
         DBConnection.execute_query(sql_create_database_table)
-        select_dois = f"""select doi from matches where ignore = 0"""
+        select_dois = f"""select doi from matches where skip = 0"""
         matched_dois = DBConnection.execute_query(select_dois)
         for doi in matched_dois:
             doi = doi[0]

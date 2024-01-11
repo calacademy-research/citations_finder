@@ -65,7 +65,7 @@ class Downloaders:
 
         for doi_entry in doi_list:
         # logging.warning(f"journal:{doi_entry.journal_title} not found: {doi_entry.not_found_count} doi: {doi_entry.doi}")
-            if not doi_entry.check_file():
+            if not doi_entry.check_and_update_file_path():
                 if self.download(doi_entry):
                     doi_entry.mark_successful_download()
             else:
@@ -87,7 +87,7 @@ class Downloaders:
         encountered a case 'download_single_doi = 10.1073/pnas.1719260115' where it's marked 
         as downloaded in db but not downloaded to path. Should check_file first before check downloaded
         """     
-        if doi_entry.check_file():
+        if doi_entry.check_and_update_file_path():
             logging.info(f"PDF already downloaded; marking {doi_entry.doi} as downloaded ")
             return True
         
