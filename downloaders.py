@@ -65,12 +65,9 @@ class Downloaders:
 
         for doi_entry in doi_list:
         # logging.warning(f"journal:{doi_entry.journal_title} not found: {doi_entry.not_found_count} doi: {doi_entry.doi}")
-            if not doi_entry.check_and_update_file_path():
-                if self.download(doi_entry):
-                    doi_entry.mark_successful_download()
-            else:
-                # it's downloaded, but not marked as downloaded.
+            if self.download(doi_entry):
                 doi_entry.mark_successful_download()
+
 
 
     def download(self, doi_entry:DoiEntry):
