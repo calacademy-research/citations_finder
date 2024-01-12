@@ -31,3 +31,4 @@ pdfminer.six
 tabula-py
 PyPDF2
 JPype1
+pymysql
