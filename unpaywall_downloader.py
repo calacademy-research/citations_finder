@@ -29,7 +29,6 @@ class UnpaywallDownloader(Downloader, Utils):
         self.most_recent_attempt = None
         self.error_code = None
         self.firefox_failure = None
-        self.create_tables()
         email = self.config.get_string("downloaders", "header_email")
         UnpywallCredentials(email)
         self._fetch_config_settings()

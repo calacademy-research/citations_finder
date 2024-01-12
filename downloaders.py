@@ -84,13 +84,10 @@ class Downloaders:
         encountered a case 'download_single_doi = 10.1073/pnas.1719260115' where it's marked 
         as downloaded in db but not downloaded to path. Should check_file first before check downloaded
         """     
-        if doi_entry.check_and_update_file_path():
+        if doi_entry.check_and_update_file_path_variables():
             logging.info(f"PDF already downloaded; marking {doi_entry.doi} as downloaded ")
             return True
-        
-        #how does python know to look at the downloaded column in dois table?
-        if doi_entry.downloaded:
-            return True
+
     
         logging.info("==================================================================")
         logging.info(f"Attempting download: {datetime.now()}:{doi_entry.doi} journal: {doi_entry.get_journal()}")

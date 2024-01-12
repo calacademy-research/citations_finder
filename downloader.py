@@ -89,7 +89,7 @@ class Downloader(ABC, Utils):
                 f.write(r.content)
             # testing: line below simulate a 503 status code for testing purposes
             # return (False, 503)
-            return (True, r.status_code)
+            return True, r.status_code
 
         # raise error if url is a html
         else:
@@ -97,7 +97,7 @@ class Downloader(ABC, Utils):
             # testing: line below simulate a 503 status code for testing purposes
             # return (False, 503)
 
-            return (False, r.status_code)
+            return False, r.status_code
 
     @abstractmethod
     def download(self, doi_entry):

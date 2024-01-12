@@ -106,7 +106,7 @@ class Scan:
         """
         self.textfile_path = None
         self.broken_converter = None
-        if doi_object.check_and_update_file_path() is False:
+        if doi_object.check_and_update_file_path_variables() is False:
             raise FileNotFoundError(
                 f"Missing PDF for doi {doi_object.doi}. path would be {doi_object.generate_file_path()} title: {doi_object.get_title()}")
 

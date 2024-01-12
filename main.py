@@ -1,5 +1,4 @@
 from doi_entry import DoiFactory
-import sys
 from doi_database import DoiDatabase
 from database_report import DatabaseReport
 from scan_database import ScanDatabase
@@ -146,7 +145,7 @@ def setup():
     #Checks if an DOI's associated PDF file exists, then updates the database
     if config.get_boolean('download', 'updatate_pdf_file_link'):
         print ("Verifying PDF files against doi database and updating all records - this is slow!")
-        db.update_doi_pdf_downloded_status(download_start_year, download_end_year)
+        db.update_doi_pdf_downloaded_status_per_year(download_start_year, download_end_year)
 
 
     if config.get_boolean('download', 'download_single_journal'):

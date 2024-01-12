@@ -270,7 +270,7 @@ class DoiEntry(Utils):
         filename = os.path.join(path, self.get_filename_from_doi_entry())
         return filename
 
-    def check_and_update_file_path(self, path=None):
+    def check_and_update_file_path_variables(self, path=None):
         """Check whether designated file already exists in path. If so, 
         return True and update self. If otherwise, return False and
         update self.

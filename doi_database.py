@@ -186,7 +186,7 @@ class DoiDatabase(Utils):
         logging.info(f"{issn}\t{name}\t{type}")
         sql = f"REPLACE INTO journals (issn,name, type) VALUES ('{issn}','{name}','{type}')"
 
-        results = DBConnection.execute_query(sql)
+        DBConnection.execute_query(sql)
 
 
     def download_dois_by_journal_size(self,
@@ -306,35 +306,59 @@ class DoiDatabase(Utils):
             raise FileNotFoundError(f"No such doi: {doi} or multiple results")
         return doi[0]
 
-    def update_doi_pdf_downloded_status(self, start_year, end_year):
-        """Checks if an DOI's associated PDF file exists, then updates the database
+    def update_doi_pdf_downloaded_status_per_year(self, start_year, end_year):
+        """Updates the download status of DOI's PDFs year by year.
 
         :param start_year: The starting year of the date range.
         :type start_year: int
         :param end_year: The ending year of the date range.
         :type end_year: int
         """
-        logging.info("Loading dois to check for files..")
-        dois = self.get_dois(start_year, end_year, downloaded=None)
-        total_dois = len(dois)
-        logging.info(f"Checking paths for {total_dois} DOIs... ")
+        if end_year-start_year > 0:
+            print(f"Updating DOIs in year range {start_year} -> {end_year}, one year at a time.")
+        for year in range(start_year, end_year + 1):
+            self._update_doi_pdf_downloaded_status_per_single_year(year)
 
+    def _update_doi_pdf_downloaded_status_per_single_year(self, year):
+        """Process DOIs for a specific year.
+
+        :param year: Year to process the DOIs.
+        :type year: int
+        """
+        logging.info(f"Loading DOIs for the year {year} to check for files..")
+        dois = self.get_dois(year, year, downloaded=None)
+        total_dois = len(dois)
+        logging.info(f"Checking paths for {total_dois} DOIs in {year}")
+        linefeed=0
         for index, doi_entry in enumerate(dois, start=1):
             if index % 1000 == 0 or index == total_dois:
-                logging.info(f"Processed {index}/{total_dois} DOIs.")
-            old_downloaded = doi_entry.get_downloaded_status()
-            if doi_entry.get_downloaded_status() != doi_entry.check_and_update_file_path():
-                if doi_entry.get_downloaded_status():
-                    if index % 80 == 0:
-                        print(".\n", end="")
-                    else:
-                        print(".", end="")
-                else:
-                    if index % 80 == 0:
-                        print("x\n", end="")
-                    else:
-                        print("x", end="")
+                if linefeed > 0:
+                    print('')
+                    linefeed=0
+                print(f"Processed {index}/{total_dois} DOIs.")
+            if doi_entry.get_downloaded_status() != doi_entry.check_and_update_file_path_variables():
+                self._print_update_progress(linefeed, doi_entry.get_downloaded_status())
                 doi_entry.update_database()
+                linefeed += 1
+
+    def _print_update_progress(self, index, downloaded_status):
+        """Print progress based on the downloaded status.
+
+        :param index: Index of the current processing.
+        :type index: int
+        :param downloaded_status: Downloaded status of the DOI.
+        :type downloaded_status: bool
+        """
+        if downloaded_status:
+            if index % 80 == 0:
+                print(".\n", end="")
+            else:
+                print(".", end="")
+        else:
+            if index % 80 == 0:
+                print("x\n", end="")
+            else:
+                print("x", end="")
 
     # Ensures that all DOIs in the database have associated files
     # Download, if not.
