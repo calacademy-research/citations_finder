@@ -88,7 +88,7 @@ class Downloaders:
             logging.info(f"PDF already downloaded; marking {doi_entry.doi} as downloaded ")
             return True
 
-    
+
         logging.info("==================================================================")
         logging.info(f"Attempting download: {datetime.now()}:{doi_entry.doi} journal: {doi_entry.get_journal()}")
         

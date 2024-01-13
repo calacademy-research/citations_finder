@@ -51,6 +51,9 @@ class DBConnection(object):
 
     @classmethod
     def log_sql(cls, query, stack_trace):
+        # for debugging, enable if there are issues.
+        # works with ./vm/sql_log_scan.sh
+        return
         formatted_stack_trace = ''.join(stack_trace)
         log_string = (
             f"SQL Query: {query}\n"
