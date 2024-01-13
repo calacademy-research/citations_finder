@@ -90,7 +90,7 @@ class Downloaders:
 
 
         logging.info("==================================================================")
-        logging.info(f"Attempting download: {datetime.now()}:{doi_entry.doi} journal: {doi_entry.get_journal()}")
+        logging.info(f"Attempting download at {datetime.now()}: {doi_entry.published_date}:{doi_entry.doi} journal: {doi_entry.get_journal()}")
         
         #below line is performing download action
         #the code iterates over each element (downloader) in this list and calls the download 
