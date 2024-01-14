@@ -194,6 +194,7 @@ class DoiEntry(Utils):
                                             )
                         VALUES (%s, %s, %s, %s, %s, %s, %s)                
         """
+        self.article_title = self.article_title[:8100]
 
         args = [self.doi,
                 self.issn,

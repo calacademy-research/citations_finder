@@ -4,6 +4,7 @@ services:
     build: .
     volumes:
       - ./config.ini:/app/config.ini
+      - ./journals.tsv:/app/journals.tsv
       - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
       - ./pdf:/app/pdf
 
@@ -11,6 +12,7 @@ services:
     build: .
     volumes:
       - ./config.ini:/app/config.ini
+      - ./journals.tsv:/app/journals.tsv
       - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
       - ./pdf:/app/pdf
 
@@ -18,6 +20,7 @@ services:
     build: .
     volumes:
       - ./config.ini:/app/config.ini
+      - ./journals.tsv:/app/journals.tsv
       - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
       - ./pdf:/app/pdf
 
@@ -25,6 +28,7 @@ services:
     build: .
     volumes:
       - ./config.ini:/app/config.ini
+      - ./journals.tsv:/app/journals.tsv
       - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
       - ./pdf:/app/pdf
 
@@ -32,6 +36,7 @@ services:
     build: .
     volumes:
       - ./config.ini:/app/config.ini
+      - ./journals.tsv:/app/journals.tsv
       - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
       - ./pdf:/app/pdf
 
@@ -39,5 +44,6 @@ services:
     build: .
     volumes:
       - ./config.ini:/app/config.ini
+      - ./journals.tsv:/app/journals.tsv
       - ./vm/vm_passwords.yml.docker:/app/vm/vm_passwords.yml
       - ./pdf:/app/pdf
