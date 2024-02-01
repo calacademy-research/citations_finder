@@ -201,7 +201,23 @@ Currently only tested on mac. create a virtual environment using the requirement
   if the results come in date order it would be possbile to download specific years instead of oldest
   to now. It is likely that this is so, someone should confirm with RTFM
 
-* fix and test crossref downloader (may be subsumed in unpaywall.org?)
+  * Bug: in certain conditions, we can show a paper as downloaded but not have the 
+     corresponding PDF. Running "update_pdf_file_link" true will update the downloaded flag
+     in the DOI record. However, (only tested for unpaywall_downloader), the missing papers
+     that have an unpaywall downloader row entry are NOT retried. Underlying bug should be found
+     and fixed, but cleared this with:
+
+             DELETE FROM collections_papers.unpaywall_downloader
+          WHERE EXISTS (
+              SELECT 1
+              FROM collections_papers.dois
+              WHERE unpaywall_downloader.doi = dois.doi
+                AND unpaywall_downloader.not_available != 1
+                AND dois.downloaded = 0
+          );
+
+
+
 
 * Generalize to work on windows - use os.path.join instead of slashes using (os.path.sep) and os.path.join.
 

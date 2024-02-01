@@ -182,24 +182,26 @@ class Scan:
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-    def _run_converter(self):
-        pdf_path = f"{os.getcwd()}/{self.doi_object.full_path}"
-        text = self.extract_text_from_pdf(pdf_path)
-        tables = self.extract_tables_from_pdf(pdf_path)
+        try:
+            pdf_path = f"{os.getcwd()}/{self.doi_object.full_path}"
+            text = self.extract_text_from_pdf(pdf_path)
+            tables = self.extract_tables_from_pdf(pdf_path)
 
-        text.join(table.to_string(index=False, header=True) for table in
-                  tables) if tables else "No tables found or an error occurred."
+            text += " ".join(table.to_string(index=False, header=True) for table in
+                             tables) if tables else "No tables found or an error occurred."
 
-        text = self.fix_spaced_headings(text,
-                                        ["ACKNOWLEDGMENTS", "INTRODUCTION", "ABSTRACT", "CONCLUSION", "REFERENCES",
-                                         "METHODS", "RESULTS", "DISCUSSION", "LITERATURE REVIEW", "BACKGROUND",
-                                         "RESEARCH PAPER", "literature cited", "ЛИТЕРАТУРА"])
+            text = self.fix_spaced_headings(text,
+                                            ["ACKNOWLEDGMENTS", "INTRODUCTION", "ABSTRACT", "CONCLUSION", "REFERENCES",
+                                             "METHODS", "RESULTS", "DISCUSSION", "LITERATURE REVIEW", "BACKGROUND",
+                                             "RESEARCH PAPER", "literature cited", "ЛИТЕРАТУРА"])
 
-        text_file_path = self._get_textfile_path()
-        self._create_textfile_path(text_file_path)
-        with open(text_file_path, 'w') as file:
-            file.write(text)
-        self.textfile_path = text_file_path
+            text_file_path = self._get_textfile_path()
+            self._create_textfile_path(text_file_path)
+            with open(text_file_path, 'w') as file:
+                file.write(text)
+            self.textfile_path = text_file_path
+        except RecursionError as e: # bug in library
+            logging.error(f"RecursionError occurred while processing {pdf_path}: {e}")
 
 
     def _run_converter_with_timeout(self):

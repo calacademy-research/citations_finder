@@ -272,8 +272,6 @@ class DoiDatabase(Utils):
 
         return select_dois
 
-        return select_dois
-
     def get_dois(self, start_year, end_year, journal_issn=None, downloaded=True, limit=None, offset=None):
         """
         Get DOI entries from the database within the specified date range.

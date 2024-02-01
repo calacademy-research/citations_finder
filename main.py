@@ -143,7 +143,7 @@ def setup():
     download_end_year = config.get_int('download', 'download_end_year')
 
     #Checks if an DOI's associated PDF file exists, then updates the database
-    if config.get_boolean('download', 'updatate_pdf_file_link'):
+    if config.get_boolean('download', 'update_pdf_file_link'):
         print ("Verifying PDF files against doi database and updating all records - this is slow!")
         db.update_doi_pdf_downloaded_status_per_year(download_start_year, download_end_year)
 
