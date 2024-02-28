@@ -13,6 +13,7 @@ import threading
 
 
 class Scan:
+    broken_converter: bool
     # TODO: this only encompasses a few of the tags we end up scanning for
     # in more detail with user specified things later - and I think it's currently the screening
     # step. that's bad; let's review to ensure that the top level screen encompasses
@@ -205,7 +206,7 @@ class Scan:
 
 
     def _run_converter_with_timeout(self):
-        converter_thread = threading.Thread(target=self._run_converter)
+        converter_thread = threading.Thread(target=self._run_converter_with_timeout)
         converter_thread.start()
         timeout_minutes = 10
         converter_thread.join(timeout=(60 * timeout_minutes))
@@ -229,11 +230,17 @@ class Scan:
 
         if self.broken_converter:
             return False
+
+
         if not os.path.exists(doi_textfile_path) or force is True:
+            if self.config.get_boolean('scan', 'disable_txt_generation'):
+                logging.warning(f"    Missing text file, txt generateion disabled")
+                return False
             logging.warning(f"    Missing txt file, generating {doi_textfile_path} from {self.doi_object.full_path}")
             self._run_converter_with_timeout()
             logging.warning(f"     Generation complete.")
             if not os.path.exists(doi_textfile_path):
+
                 logging.error("PDF conversion failure; marking as failed and continuing.")
                 self.broken_converter = True
                 return False
