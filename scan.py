@@ -412,7 +412,7 @@ class Scan:
             result = re.search(regex, line)
             if result:
                 results.append(result.group(0))
-                contexts = self.extract_context(line, regex,2)
+                contexts = self.extract_context(line, regex,15)
                 for context in contexts:
                     self.found_lines.append((context, score_per_line, result.group(0)))
                     found_count += 1
