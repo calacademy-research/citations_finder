@@ -352,10 +352,10 @@ class Scan:
         for result in results:
             hyphen_count = result.count('-')
             if hyphen_count < 2:
-                logging.debug(f"Hyphens ok: {result}")
+                # logging.debug(f"Hyphens ok: {result}")
                 self.score += 300
             else:
-                logging.debug(f"Hyphens bad: {result}")
+                # logging.debug(f"Hyphens bad: {result}")
                 self.score -= 20
 
         collection_manager_names = Scan._get_collection_manager_names()
@@ -399,7 +399,7 @@ class Scan:
 
     def _scan_with_regex(self, regex, score_per_line, ok_after_references, do_score=True):
         results = []
-        logging.debug(f"Scanning with regex: {regex}")
+        # logging.debug(f"Scanning with regex: {regex}")
         found_count = 0
         with open(self.textfile_path, "r") as a_file:
             lines = [line.lower().strip() for line in a_file if line.strip()]
@@ -407,7 +407,7 @@ class Scan:
 
         for i, line in enumerate(lines):
             if not ok_after_references and self._is_references_section(line):
-                logging.debug("Stopping scan before references.")
+                # logging.debug("Stopping scan before references.")
                 break
             result = re.search(regex, line)
             if result:
@@ -487,8 +487,8 @@ class Scan:
     def _update_score(self, found_count, score_per_line):
         old_score = self.score
         self.score += score_per_line * found_count
-        if found_count > 0:
-            logging.debug(f"Score change. From {old_score} to {self.score}")
+        # if found_count > 0:
+        #     logging.debug(f"Score change. From {old_score} to {self.score}")
 
 
 class RecordNotFoundException(Exception):
