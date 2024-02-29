@@ -31,6 +31,8 @@ class Scan:
         :raises NotImplementedError: If neither doi_object nor doi_string is provided.
         :raises RecordNotFoundException: If the DOI query does not yield the expected results.
         """
+        self.references_keywords = ["references", "referencias", "литература", "literature cited"]
+
         self.collection_tag_regex = self._get_collection_tag_regex()
         self.text_directory = self.config.get_string('scan', 'scan_text_directory')
         if not os.path.exists(self.text_directory):
@@ -350,10 +352,10 @@ class Scan:
         for result in results:
             hyphen_count = result.count('-')
             if hyphen_count < 2:
-                # logging.debug(f"Hyphens ok: {result}")
+                logging.debug(f"Hyphens ok: {result}")
                 self.score += 300
             else:
-                # logging.debug(f"Hyphens bad: {result}")
+                logging.debug(f"Hyphens bad: {result}")
                 self.score -= 20
 
         collection_manager_names = Scan._get_collection_manager_names()
@@ -396,89 +398,97 @@ class Scan:
         return self._scan_with_regex(regex, 1, False)
 
     def _scan_with_regex(self, regex, score_per_line, ok_after_references, do_score=True):
-        """Searches through the text content line by line using the provided regular expression pattern. For each
-         matching line, it collects the matched portion, updates the scan score, and records the match details if needed.
-
-        :param regex: The regular expression pattern to search for in each line
-        :type regex: str
-        :param score_per_line: The score value to be added for each line containing a match
-        :type score_per_line: int
-        :param ok_after_references: If True, continue scanning even after encountering reference sections, else stop
-        :type ok_after_references: bool
-        :param do_score: If True, update the scan score based on matches, defaults to True
-        :type do_score: bool, optional
-        :return: A list of matched results found in the text content
-        :rtype: list[str]
-        """
         results = []
-
-        # logging.debug(f"Scanning with regex: {regex}")
+        logging.debug(f"Scanning with regex: {regex}")
         found_count = 0
-        cur_line = None
         with open(self.textfile_path, "r") as a_file:
-            for next_line in a_file:
-                next_line = next_line.lower()
-                next_line = next_line.strip()
-                next_words = next_line.split()
+            lines = [line.lower().strip() for line in a_file if line.strip()]
+        lines = self.split_references_from_lines(lines)
 
-                if len(next_words) <= 1:
-                    try:
-                        if (len(next_words) > 0 and len(next_words[0]) <= 1) or \
-                                (len(next_words) > 0 and next_words[0].isdigit() and int(next_words[0]) < 1000):
-                            # This is usually a line number or a blank line.
-                            # logging.debug(f"Skipping blank: {next_line}")
-                            continue
-                    except ValueError as e:
-                        logging.error(f"Bad line value, not breaking. {e}")
-
-                if len(next_words) == 0:
-                    # logging.info(f"totally blank: {next_line}")
-                    continue
-
-                # preparing the line for searching
-                if cur_line is not None:
-                    cur_line = cur_line.strip()
-                    # append three words of the next line
-                    hyphen = False
-                    if cur_line.endswith('-'):
-                        hyphen = True
-                        cur_line = cur_line[:-1]
-                    for id, next_word in enumerate(next_words):
-                        if id > 3:
-                            # For longer key phrases. e.g.: "califnroia academy of sciences"
-                            # broken up across several lines.
-                            # False positives are ok, false negatives are no fun.
-                            break
-                        if not hyphen:
-                            cur_line = cur_line + f" {next_words[id]}"
-                        else:
-                            cur_line = cur_line + f"{next_words[id]}"
-                            hyphen = False
-
-                    # then performing the actual search operation.
-                    result = re.search(regex, cur_line)
-                    if result is not None:
-                        # logging.debug(".", end='')
-                        # logging.debug(f"{self.textfile_path} possible: {cur_line}")
-                        results.append(result.group(0))
-                        found_count += 1
-                        self.found_lines.append((cur_line, score_per_line, result.group(0)))
-                cur_line = next_line
-                if ok_after_references is False:
-                    if next_line == "references" in next_line or \
-                            "referencias" in next_line or \
-                            "ЛИТЕРАТУРА".lower() in next_line or \
-                            "literature cited" in next_line:
-                        # logging.debug("Stopping scan before references.")
-                        break
-        old_score = self.score
-        assert self.score is not None
+        for i, line in enumerate(lines):
+            if not ok_after_references and self._is_references_section(line):
+                logging.debug("Stopping scan before references.")
+                break
+            result = re.search(regex, line)
+            if result:
+                results.append(result.group(0))
+                contexts = self.extract_context(line, regex,2)
+                for context in contexts:
+                    self.found_lines.append((context, score_per_line, result.group(0)))
+                    found_count += 1
 
         if do_score:
-            self.score = self.score + (score_per_line * found_count)
-        # if found_count > 0:
-        #     logging.debug(f"Score change. From {old_score} to {self.score}\n")
+            self._update_score(found_count, score_per_line)
         return results
+
+
+    def extract_context(self, line, regex, window=20):
+        words = line.split()
+        match_positions = [m.start() for m in re.finditer(regex, line)]
+        contexts = []
+        for position in match_positions:
+            start_pos = position
+            end_pos = position
+            start_space_count = end_space_count = 0
+
+            while start_space_count < window and start_pos > 0:
+                start_pos -= 1
+                if line[start_pos] == ' ':
+                    start_space_count += 1
+
+            while end_space_count < window and end_pos < len(line) - 1:
+                end_pos += 1
+                if line[end_pos] == ' ':
+                    end_space_count += 1
+
+            match_word_start = line.rfind(' ', 0, start_pos) + 1
+            match_word_end = line.find(' ', end_pos, len(line))
+            if match_word_end == -1: match_word_end = len(line)
+
+            context = line[max(0, match_word_start):min(len(line), match_word_end)]
+            contexts.append(context)
+
+        return contexts
+
+
+    def _prepare_line_for_search(self, cur_line, next_words):
+        if cur_line is not None:
+            cur_line = cur_line.strip().rstrip('-')
+            for i, next_word in enumerate(next_words[:4]):
+                cur_line += f" {next_word}" if cur_line[-1] != '-' else next_word
+        return cur_line
+
+    def _is_references_section(self, next_line):
+        return any(keyword in next_line for keyword in self.references_keywords)
+
+    def split_references_from_lines(self, lines):
+        pattern = re.compile(r'(' + '|'.join(self.references_keywords) + ')', re.IGNORECASE)
+        split_lines = []
+        references_start = None
+        for i, line in enumerate(reversed(lines)):
+            if references_start is None and any(
+                    keyword.lower() in line.lower() for keyword in self.references_keywords):
+                references_start = len(lines) - i - 1
+                break
+        if references_start is not None:
+            for i, line in enumerate(lines):
+                if i == references_start:
+                    parts = re.split(pattern, line, maxsplit=1)
+                    if len(parts) > 1:
+                        split_lines.extend([parts[0]] + [parts[1] + ''.join(parts[2:])])
+                    else:
+                        split_lines.append(line)
+                else:
+                    split_lines.append(line)
+        else:
+            split_lines = lines
+        return split_lines
+
+    def _update_score(self, found_count, score_per_line):
+        old_score = self.score
+        self.score += score_per_line * found_count
+        if found_count > 0:
+            logging.debug(f"Score change. From {old_score} to {self.score}")
 
 
 class RecordNotFoundException(Exception):

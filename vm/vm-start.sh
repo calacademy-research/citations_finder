@@ -69,13 +69,15 @@ if [[ $vmStatus ]]; then
     echo "Tunnel established for $uniqueVmName to collectionsdb... now running container"
 
     # Run Docker container
-    instances=4
+    instances=2
     for ((i=1; i<=$instances; i++)); do
         ssh -o StrictHostKeyChecking=no $adminUsername@$IP_ADDRESS "sudo docker run -d --network host \
           -v /opt/citations_finder/config.ini:/app/config.ini \
           -v /opt/citations_finder/vm:/app/vm \
           -v /opt/citations_finder/pdf:/app/pdf \
           -v /opt/citations_finder/journals.tsv:/app/journals.tsv\
+          --ulimit nproc=65535 \
+          --ulimit nofile=65535 \
           --name app$i citations_finder"
         sleep 90
     done
