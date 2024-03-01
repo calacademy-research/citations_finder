@@ -33,7 +33,6 @@ class Scan:
         """
         self.references_keywords = ["references", "referencias", "литература", "literature cited"]
 
-        self.collection_tag_regex = self._get_collection_tag_regex()
         self.text_directory = self.config.get_string('scan', 'scan_text_directory')
         if not os.path.exists(self.text_directory):
             os.mkdir(self.text_directory)
@@ -250,22 +249,7 @@ class Scan:
             self.textfile_path = doi_textfile_path
         return True
 
-    @classmethod
-    def _get_collection_tag_regex(cls):
-        """Generates a regular expression pattern for matching collection tags.
 
-        The generated pattern is used to identify and extract collection tags from text.
-
-        :return: A regular expression pattern for collection tag matching.
-        :rtype: str
-        """
-        institution_root_name = eval(cls.config.get_string('scan_search_keys', 'institution_root_name'))
-        collections_with_id_strings = cls.config.get_list('scan_search_keys', 'collections_with_id_strings')
-        collection_tag_regex = f"(?i)(([ \(\[])+|^){institution_root_name}"
-        for id in collections_with_id_strings:
-            collection_tag_regex += f"({id})*"
-        collection_tag_regex += "[: ]+[ ]*[0-9\-]+"
-        return collection_tag_regex
 
     @classmethod
     def _get_collection_manager_names(cls):
@@ -324,7 +308,8 @@ class Scan:
     @classmethod
     def get_regex_score_tuples(cls):
         retval = []
-        collection_tag_regex = cls._get_collection_tag_regex()
+        collection_tag_regex =  cls.config.get_string('scan_search_keys','collections_regex_match')
+
         retval.append((collection_tag_regex, 300))
         for regex_tuple in Scan._get_scored_strings() + Scan._get_collection_manager_names():
             regex = regex_tuple[0].lower()
@@ -347,7 +332,7 @@ class Scan:
             return False
         if clear_existing_records or self.score is None:
             self.score = 0
-        regex = self.collection_tag_regex
+        regex = self.config.get_string('scan_search_keys','collections_regex_match')
         results = self._scan_with_regex(regex, 300, ok_after_references=True, do_score=False)
         for result in results:
             hyphen_count = result.count('-')
