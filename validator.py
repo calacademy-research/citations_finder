@@ -2,12 +2,12 @@ from db_connection import DBConnection
 from utils_mixin import Utils
 import subprocess
 import os
-import re
 from colorama import Fore, Back, Style
 from ete3 import NCBITaxa
-from scan import Scan
 from datetime import datetime
 import logging
+from html import unescape
+from bs4 import BeautifulSoup
 
 ncbi = NCBITaxa()
 
@@ -224,7 +224,7 @@ class Validator(Utils):
         :type end_year: int
         """        
 
-        sql = f"""select dois.doi, dois.full_path, dois.published_date, scans.title, scans.score from scans,dois
+        sql = f"""select dois.doi, dois.full_path, dois.published_date, dois.article_title , scans.score from scans,dois
                                     left join matches m on dois.doi = m.doi
                                     where
                                     scans.doi = dois.doi and
@@ -241,6 +241,10 @@ class Validator(Utils):
             published_date = candidate[2]
             title = candidate[3]
             score = candidate[4]
+
+            clean_string = unescape(title)
+            soup = BeautifulSoup(clean_string, 'html.parser')
+            title = soup.get_text()
             self.matches.append(Match(doi, score, title, full_path, published_date))
 
         for match in self.matches:

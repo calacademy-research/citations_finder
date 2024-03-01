@@ -235,7 +235,7 @@ class Scan:
 
         if not os.path.exists(doi_textfile_path) or force is True:
             if self.config.get_boolean('scan', 'disable_txt_generation'):
-                logging.warning(f"    Missing text file, txt generateion disabled")
+                logging.warning(f"    Missing text file {doi_textfile_path}, txt generateion disabled")
                 return False
             logging.warning(f"    Missing txt file, generating {doi_textfile_path} from {self.doi_object.full_path}")
             self._run_converter_with_timeout()
@@ -249,48 +249,101 @@ class Scan:
             self.textfile_path = doi_textfile_path
         return True
 
-
-
     @classmethod
     def _get_collection_manager_names(cls):
-        """Retrieves a list of collection manager names from the configuration,
-        processes them for various variations, and returns a list of tuples containing
-        the processed name variations and associated scores.
-
-        :return: A list of tuples containing processed name variations and scores
-        :rtype: list
-        """
         collection_manager_names = cls.config.get_list('scan_search_keys', 'collection_manager_names')
         all_name_variations = []
         for test_string, score in collection_manager_names:
             test_string = test_string.lower()
-            # Case 1: last name only like 'shevock'
-            if len(test_string.split()) == 1:
+            name_parts = test_string.split()
+            # Case 1: last name only
+            if len(name_parts) == 1:
                 all_name_variations.append((test_string, score))
-                continue
-            # Case 2: parsing full names with first, last, and middle
-            if len(test_string.split()) == 3:
-                firstname, middlename, lastname = test_string.split()
-                all_name_variations.append((f"{firstname} {middlename} {lastname}", score))
             else:
-                firstname, lastname = test_string.split()
-            first_letter = firstname[0]
-            # Case 3: parsing initial names like 'D.H. Kavanaugh'
-            if firstname.count('.') > 1:
-                all_name_variations.append((f"{firstname} {lastname}", score))
-                all_name_variations.append((f"{firstname}{lastname}", score))
-                all_name_variations.append((f"{firstname[:-1]} {lastname}", score))
-                continue
-            # Case 4: parsing full names with first and last
-            elif len(firstname) != 1 and len(firstname.replace('.', '')) != 1:
-                all_name_variations.append((f"{firstname} {lastname}", score))
-                all_name_variations.append((f"{first_letter}. {lastname}", 200))
-                all_name_variations.append((f"{first_letter} {lastname}", 200))
-            # Case 5: initial name like 'd catania' or 'd. catania'
-            else:
-                all_name_variations.append((f"{first_letter}. {lastname}", score))
-                all_name_variations.append((f"{first_letter} {lastname}", score))
+                first_part = name_parts[0]
+                last_part = name_parts[-1]
+                middle_parts = name_parts[1:-1]
+                initials = [p[0] for p in name_parts]
+
+                # Full name
+                all_name_variations.append((' '.join(name_parts), score))
+                # First + Last
+                all_name_variations.append((f"{first_part} {last_part}", score))
+                # Initials + Last
+                all_name_variations.append((f"{' '.join(initials[:-1])}. {last_part}", score))
+                all_name_variations.append((f"{''.join(initials[:-1])}. {last_part}", score))
+                # First Initial + Middle Initial + Last
+                if middle_parts:
+                    all_name_variations.append(
+                        (f"{first_part[0]}. {' '.join([m[0] for m in middle_parts])}. {last_part}", score))
+                    all_name_variations.append(
+                        (f"{first_part[0]} {' '.join([m[0] for m in middle_parts])} {last_part}", score))
+                    all_name_variations.append(
+                        (f"{first_part[0]}.{''.join([m[0] for m in middle_parts])}.{last_part}", score))
+                    all_name_variations.append(
+                        (f"{first_part[0]}.{''.join([m[0] for m in middle_parts])}. {last_part}", score))
+                # Initials only
+                all_name_variations.append((f"{' '.join(initials)}", score))
+                all_name_variations.append((f"{''.join(initials)}", score))
+
+                # Handle cases with dots and without for each part
+                for i in range(1, len(middle_parts) + 1):
+                    middle_initials = [p[0] for p in middle_parts[:i]]
+                    without_middle = ' '.join([first_part, ' '.join(middle_initials), last_part])
+                    with_dots = ' '.join([f"{p[0]}." for p in name_parts[:-1]]) + ' ' + last_part
+                    all_name_variations.append((without_middle, score))
+                    all_name_variations.append((with_dots, score))
+
+                    # Combining middle initials without space
+                    combined_middle = ''.join(middle_initials)
+                    combined_with_dots = f"{first_part[0]}." + ''.join(
+                        [f"{m}." for m in combined_middle]) + f" {last_part}"
+                    combined_without_dots = f"{first_part[0]}" + combined_middle + f" {last_part}"
+                    all_name_variations.append((combined_with_dots, score))
+                    all_name_variations.append((combined_without_dots, score))
+
         return all_name_variations
+
+    @classmethod
+    # def _get_collection_manager_names(cls):
+    #     """Retrieves a list of collection manager names from the configuration,
+    #     processes them for various variations, and returns a list of tuples containing
+    #     the processed name variations and associated scores.
+    #
+    #     :return: A list of tuples containing processed name variations and scores
+    #     :rtype: list
+    #     """
+    #     collection_manager_names = cls.config.get_list('scan_search_keys', 'collection_manager_names')
+    #     all_name_variations = []
+    #     for test_string, score in collection_manager_names:
+    #         test_string = test_string.lower()
+    #         # Case 1: last name only like 'shevock'
+    #         if len(test_string.split()) == 1:
+    #             all_name_variations.append((test_string, score))
+    #             continue
+    #         # Case 2: parsing full names with first, last, and middle
+    #         if len(test_string.split()) == 3:
+    #             firstname, middlename, lastname = test_string.split()
+    #             all_name_variations.append((f"{firstname} {middlename} {lastname}", score))
+    #         else:
+    #             firstname, lastname = test_string.split()
+    #         first_letter = firstname[0]
+    #         # Case 3: parsing initial names like 'D.H. Kavanaugh'
+    #         if firstname.count('.') > 1:
+    #             all_name_variations.append((f"{firstname} {lastname}", score))
+    #             all_name_variations.append((f"{firstname}{lastname}", score))
+    #             all_name_variations.append((f"{firstname[:-1]} {lastname}", score))
+    #             continue
+    #         # Case 4: parsing full names with first and last
+    #         elif len(firstname) != 1 and len(firstname.replace('.', '')) != 1:
+    #             all_name_variations.append((f"{firstname} {lastname}", score))
+    #             all_name_variations.append((f"{first_letter}. {lastname}", 200))
+    #             all_name_variations.append((f"{first_letter} {lastname}", 200))
+    #         # Case 5: initial name like 'd catania' or 'd. catania'
+    #         else:
+    #             all_name_variations.append((f"{first_letter}. {lastname}", score))
+    #             all_name_variations.append((f"{first_letter} {lastname}", score))
+    #     return all_name_variations
 
     @classmethod
     def _get_scored_strings(cls):
@@ -378,15 +431,15 @@ class Scan:
     def scan_specimen_ids(self):
         if self.score is None:
             self.score = 0
-        regex = self.collection_tag_regex
+        regex = self.config.get_string('scan_search_keys','collections_regex_match')
 
         return self._scan_with_regex(regex, 1, False)
 
     def _scan_with_regex(self, regex, score_per_line, ok_after_references, do_score=True):
         results = []
-        # logging.debug(f"Scanning with regex: {regex}")
+        logging.debug(f"Scanning with regex: {regex}")
         found_count = 0
-        with open(self.textfile_path, "r") as a_file:
+        with open(self._get_textfile_path(), "r") as a_file:
             lines = [line.lower().strip() for line in a_file if line.strip()]
         lines = self.split_references_from_lines(lines)
 

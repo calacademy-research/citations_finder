@@ -161,22 +161,27 @@ def setup():
     else:
         print ("Skipping downloading papers...")
 
+    reset_scan_database = config.get_boolean('scan', 'reset_scan_database')
+
     if config.get_boolean('scan', 'enabled'):
+
         print("STARTING SCAN")
+        scan_db = ScanDatabase(db, reset_scan_database=reset_scan_database)
+
         scan_start_year = config.get_int('scan', 'scan_start_year')
         scan_end_year = config.get_int('scan', 'scan_end_year')
         rescore = config.get_boolean('scan', 'rescore')
-        reset_scan_database = config.get_boolean('scan', 'reset_scan_database')
-        scan_db = ScanDatabase(db, reset_scan_database=reset_scan_database)
+
         scan_db.scan_pdfs(scan_start_year, scan_end_year, rescore=rescore)
 
-        if config.get_boolean('scan_for_specimen_ids', 'enabled'):
-            print("Scan for specimen ids...")
+    if config.get_boolean('scan_for_specimen_ids', 'enabled'):
+        print("Scan for specimen ids...")
+        scan_db = ScanDatabase(db, reset_scan_database=reset_scan_database)
 
-            reset_scan_database = config.get_boolean('scan_for_specimen_ids', 'reset_scan_database')
-            if reset_scan_database:
-                print("Resetting specimen id scan tables...")
-            scan_db.scan_for_specimen_ids(reset_tables=reset_scan_database)
+        reset_scan_id_database = config.get_boolean('scan_for_specimen_ids', 'reset_scan_database')
+        if reset_scan_database:
+            print("Resetting specimen id scan tables...")
+        scan_db.scan_for_specimen_ids(reset_tables=reset_scan_id_database)
 
     validate_enabled = config.get_boolean('validate', 'enabled')
 

@@ -4,6 +4,7 @@ from utils_mixin import Utils
 from doi_database import DoiFactory
 import logging
 import random
+from scan import RecordNotFoundException
 
 class ScanDatabase(Utils):
 
@@ -151,10 +152,18 @@ class ScanDatabase(Utils):
         matched_dois = DBConnection.execute_query(select_dois)
         for doi in matched_dois:
             doi = doi[0]
-            scan = Scan(doi_string=doi)
+            try:
+                scan = Scan(doi_string=doi)
+            except RecordNotFoundException:
+                print(f" Can't locate DOI in scan database: {doi}, skipping...")
+                continue
+            if scan.textfile_path is None:
+                print(f" Never converted txt file for doi {doi}, pdf: {scan.doi_object.full_path}")
+                continue
+            print(f"Scanning: {scan._get_textfile_path()}")
             results = scan.scan_specimen_ids()
             if results:
-                # logging.info(f"Title: {scan.title}")
+                logging.info(f"Title: {scan.title}")
                 for result in results:
                     sql_insert = f"""insert into matched_specimen_ids (doi, identifier) VALUES (%s,%s)"""
                     result = result.strip()

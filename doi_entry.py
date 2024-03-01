@@ -302,7 +302,9 @@ class DoiEntry(Utils):
             return ''
 
     def get_title(self):
-        return self.journal_title
+        return self.article_title
+        # This was wrong, but it's old code? Not sure how that error happened.
+        # return self.journal_title
 
     # Scream test - delete if unused
     # def __str__(self):
