@@ -108,7 +108,7 @@ class Match(Utils):
             if score > 200:
                 color = Fore.YELLOW
             if score > 300:
-                color = Fore.PURPLE
+                color = Fore.GREEN
 
             # we have a case where "matched" is none
             if matched is not None:
