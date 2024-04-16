@@ -74,15 +74,15 @@ class CopyOut(Utils):
         target = target_dir + f"/{os.path.basename(origin_path)}"
         if not os.path.exists(target):
             if target.endswith('.pdf'):
-                print("New Paper")
+                print(f"New Paper from {origin_path}")
             elif target.endswith('.txt'):
-                print("New Text")
+                print(f"New Text from {origin_path}")
             copyfile(origin_path, target)
         else:
             if target.endswith('.pdf'):
-                print("Paper Already Copied")
+                print(f"Paper Already Copied from {origin_path}")
             elif target.endswith('.txt'):
-                print("Text Already Copied")
+                print(f"Text Already Copied from {origin_path}")
 
     def copy_out_files(self, dest_dir="./"):
         """Copies files based on the matched rows retrieved from the 
