@@ -106,10 +106,14 @@ class CopyOut(Utils):
             issn, year = results[0]
             # Get the base directory for text files from the config
             base_path = self.config.get_string("scan", "scan_text_directory")
+            # Normalize DOI for filename usage
+            normalized_doi = doi.replace('/', '_')
             # Constructing the file path
-            file_path = os.path.join(base_path, issn, str(year), f"{doi}.txt")
+            file_path = os.path.join(base_path, issn, str(year), f"{normalized_doi}.txt")
             return file_path
+
         else:
+            print("No results for doi {doi}!!! : {sql}")
             return None
 
     def copy_out_files(self, dest_dir="./"):
@@ -126,14 +130,17 @@ class CopyOut(Utils):
             origin_path = cur_match[2]
             digital_only = bool(cur_match[7])
             if digital_only is True:
+                print("Digital only")
                 continue
-
+            print("stop -2")
             self._copy_out_file(origin_path, collection, dest_dir)
-
+            print("stop -1")
             if self.config.get_boolean("copyout","copyout_txt"):
+                print("stop 0")
                 text_path = self.generate_text_file_path(doi)
-
+                print("stop 1 text path")
                 if os.path.exists(text_path):
+                    print(f"stop 2 text path:{text_path}")
                     self._copy_out_file(text_path, collection, dest_dir)
                 else:
                     print(f"  Missing text file: {text_path}")
