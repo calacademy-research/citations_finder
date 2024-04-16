@@ -60,9 +60,6 @@ class CopyOut(Utils):
             os.makedirs(year_dir)
         return year_dir
 
-
-
-
     def _copy_out_file(self, origin_path, collection, dest_dir):
         """Copies an origin file to the destination directory based on the given collection.
 
@@ -87,15 +84,15 @@ class CopyOut(Utils):
             elif target.endswith('.txt'):
                 print(f"Text Already Copied from {origin_path}")
 
-    def generate_text_file_path(self, doi):
-        """Generates the full file path for the text files based on DOI.
+    def generate_file_path(self, doi, file_type='txt'):
+        """Generates the full file path for text or PDF files based on DOI.
 
         :param doi: The DOI of the paper for which to generate the file path.
         :type doi: str
-        :param config: Configuration object to get directory paths.
-        :type config: Config
+        :param file_type: The type of file to generate path for ('txt' or 'pdf').
+        :type file_type: str
 
-        :return: The generated full file path to the text file.
+        :return: The generated full file path to the file.
         :rtype: str
         """
         # Query to get the issn and published year based on the DOI
@@ -104,16 +101,19 @@ class CopyOut(Utils):
 
         if len(results) > 0:
             issn, year = results[0]
-            # Get the base directory for text files from the config
-            base_path = self.config.get_string("scan", "scan_text_directory")
+            # Get the base directory from the config depending on file type
+            if file_type == 'pdf':
+                base_path = self.config.get_string("downloaders", "pdf_directory")
+            else:  # default to text file directory
+                base_path = self.config.get_string("scan", "scan_text_directory")
             # Normalize DOI for filename usage
             normalized_doi = doi.replace('/', '_')
             # Constructing the file path
-            file_path = os.path.join(base_path, issn, str(year), f"{normalized_doi}.txt")
+            file_path = os.path.join(base_path, issn, str(year), f"{normalized_doi}.{file_type}")
             return file_path
 
         else:
-            print("No results for doi {doi}!!! : {sql}")
+            print(f"No results for doi {doi}!!! : {sql}")
             return None
 
     def copy_out_files(self, dest_dir="./"):
@@ -127,20 +127,17 @@ class CopyOut(Utils):
         for cur_match in self.get_matches():
             doi = cur_match[0]
             collection = cur_match[1]
-            origin_path = cur_match[2]
+            origin_path = self.generate_file_path(doi,"pdf")
             digital_only = bool(cur_match[7])
             if digital_only is True:
                 print("Digital only")
                 continue
-            print("stop -2")
+
             self._copy_out_file(origin_path, collection, dest_dir)
-            print("stop -1")
-            if self.config.get_boolean("copyout","copyout_txt"):
-                print("stop 0")
-                text_path = self.generate_text_file_path(doi)
-                print("stop 1 text path")
+
+            if self.config.get_boolean("copyout", "copyout_txt"):
+                text_path = self.generate_file_path(doi,"txt")
                 if os.path.exists(text_path):
-                    print(f"stop 2 text path:{text_path}")
                     self._copy_out_file(text_path, collection, dest_dir)
                 else:
                     print(f"  Missing text file: {text_path}")
