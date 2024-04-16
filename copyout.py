@@ -60,6 +60,9 @@ class CopyOut(Utils):
             os.makedirs(year_dir)
         return year_dir
 
+
+
+
     def _copy_out_file(self, origin_path, collection, dest_dir):
         """Copies an origin file to the destination directory based on the given collection.
 
@@ -84,6 +87,31 @@ class CopyOut(Utils):
             elif target.endswith('.txt'):
                 print(f"Text Already Copied from {origin_path}")
 
+    def generate_text_file_path(self, doi, config):
+        """Generates the full file path for the text files based on DOI.
+
+        :param doi: The DOI of the paper for which to generate the file path.
+        :type doi: str
+        :param config: Configuration object to get directory paths.
+        :type config: Config
+
+        :return: The generated full file path to the text file.
+        :rtype: str
+        """
+        # Query to get the issn and published year based on the DOI
+        sql = f"SELECT issn, YEAR(published_date) FROM collections_papers.dois WHERE doi='{doi}'"
+        results = DBConnection.execute_query(sql)
+
+        if len(results) > 0:
+            issn, year = results[0]
+            # Get the base directory for text files from the config
+            base_path = config.get_string("scan", "scan_text_directory")
+            # Constructing the file path
+            file_path = os.path.join(base_path, issn, str(year), f"{doi}.txt")
+            return file_path
+        else:
+            return None
+
     def copy_out_files(self, dest_dir="./"):
         """Copies files based on the matched rows retrieved from the 
         database, 'matches' table.
@@ -101,15 +129,10 @@ class CopyOut(Utils):
                 continue
 
             self._copy_out_file(origin_path, collection, dest_dir)
-            text_path = self.get_textfile_path(doi)
 
-            if self.config.get_string("copyout","copyout_txt") and text_path is not None:
+            if self.config.get_boolean("copyout","copyout_txt"):
+                text_path = self.generate_text_file_path(doi)
 
-                txt_dir = self.config.get_string("scan","scan_text_directory")
-                suffix = text_path.split("/txt/", 1)[1] if "/txt/" in text_path else ""
-
-                # Combine the new prefix with the suffix to form the new path
-                text_path = os.path.join(txt_dir, suffix)
                 if os.path.exists(text_path):
                     self._copy_out_file(text_path, collection, dest_dir)
                 else:
