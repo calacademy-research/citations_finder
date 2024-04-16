@@ -13,6 +13,7 @@ from crossref_journal_entry import CrossrefJournalEntry
 import journal_finder
 import logging
 
+
 def download_single_doi(doi):
     """This function handles the retrieval of DOI information, 
     checks if the DOI exists in the database, dois table, 
@@ -26,21 +27,20 @@ def download_single_doi(doi):
     :return: None
 
     Limitations here: if doi specified is shown 
-    """    
+    """
     logging.info("Single DOI download mode")
     select_doi = f"""select * from dois where doi='{doi}'"""
     doif = DoiFactory(select_doi)
     doi_list = doif.dois
     if len(doi_list) == 0:
         logging.critical(f"Single download failed - DOI not in system: {select_doi} ")
-        raise ValueError("DOI not found in the system") 
+        raise ValueError("DOI not found in the system")
         # above line used to be "sys.exit(1)", but it prevents sphinx autodoc from working
 
     downloaders = Downloaders()
 
     for doi_entry in doi_list:
         downloaders.download(doi_entry)
-
 
 
 def retry_failed_unpaywall_links(config):
@@ -57,7 +57,7 @@ def retry_failed_unpaywall_links(config):
 
     :return: None
 
-    """    
+    """
     logging.info("Retrying failed unpaywall downloads")
     select_dois = f"""select * from dois, unpaywall_downloader where downloaded=False 
      and dois.doi = unpaywall_downloader.doi and unpaywall_downloader.open_url is not null"""
@@ -65,7 +65,6 @@ def retry_failed_unpaywall_links(config):
     doif = DoiFactory(select_dois)
     doi_list = doif.dois
     downloaders = Downloaders()
-    
 
     for doi_entry in doi_list:
         if downloaders.download(doi_entry):
@@ -91,11 +90,11 @@ def setup():
 
     :return: None
     
-    """    
+    """
     config = Config()
     setup_tables()
 
-    if config.get_boolean('journal population', 'populate_journals'): 
+    if config.get_boolean('journal population', 'populate_journals'):
         gbif_url_list = config.get_list('journal population', 'gbif_api_collection_links')
         for url in gbif_url_list:
             logging.info(f"Processing journals for population from link: {url}")
@@ -111,23 +110,20 @@ def setup():
         return None
         # above line used to be "sys.exit(0)", but it prevents sphinx autodoc from working
 
-
-
-    # below line prints/logs lines such as 
+    # below line prints/logs lines such as
     # "Downloading Arthropod-Plant Interactions issn: 1872-8855 starting year: 2016 
     # ending year 2016 Type: print" regardless of config.ini settings
     db = DoiDatabase(config,
                      config.get_int('crossref', 'scan_for_dois_after_year'),
                      config.get_int('crossref', 'scan_for_dois_before_year'))
-    if config.get_boolean('general','write_used_journals'):
+    if config.get_boolean('general', 'write_used_journals'):
         print("Writing to journals table")
-        db.write_journals_to_tsv(config.get_string('general','used_journals_only_file'))
+        db.write_journals_to_tsv(config.get_string('general', 'used_journals_only_file'))
     if config.get_boolean('crossref', 'force_update'):
         print("CROSSREF FORCE INGEST")
 
         db.force_crossref_update(config.get_int('crossref', 'force_update_year'))
 
-        
     if config.get_boolean('general', 'report_on_start'):
         print("GENERATE DATABASE REPORT BEFORE START")
 
@@ -139,32 +135,29 @@ def setup():
             raise SystemExit(0)
             # above line used to be "sys.exit(0)", but it prevents sphinx autodoc from working
 
-
     download_start_year = config.get_int('download', 'download_start_year')
     download_end_year = config.get_int('download', 'download_end_year')
 
-    #Checks if an DOI's associated PDF file exists, then updates the database
+    # Checks if an DOI's associated PDF file exists, then updates the database
     if config.get_boolean('download', 'update_pdf_file_link'):
-        print ("Verifying PDF files against doi database and updating all records - this is slow!")
+        print("Verifying PDF files against doi database and updating all records - this is slow!")
         db.update_doi_pdf_downloaded_status_per_year(download_start_year, download_end_year)
-
 
     if config.get_boolean('download', 'download_single_journal'):
         print("DOWNLOAD SINGLE JOURNAL TEST MODE")
         db.download_dois(download_start_year, download_end_year,
-                       journal=None,
-                       issn=config.get_string('download', 'download_single_journal_issn'))
+                         journal=None,
+                         issn=config.get_string('download', 'download_single_journal_issn'))
 
     if config.get_boolean('download', 'enable_paper_download'):
-        print ("DOWNLOADING PAPERS")
+        print("DOWNLOADING PAPERS")
         db.download_dois_by_journal_size(download_start_year, download_end_year)
     else:
-        print ("Skipping downloading papers...")
+        print("Skipping downloading papers...")
 
     reset_scan_database = config.get_boolean('scan', 'reset_scan_database')
 
     if config.get_boolean('scan', 'enabled'):
-
         print("STARTING SCAN")
         scan_db = ScanDatabase(db, reset_scan_database=reset_scan_database)
 
@@ -206,7 +199,7 @@ def setup():
 
         for cur_year in range(copyout_start_year, copyout_end_year + 1):
             logging.info(f"Exporting year {cur_year}")
-            copyout = CopyOut(cur_year)
+            copyout = CopyOut(cur_year, config)
             if config.get_boolean('copyout', 'copyout_pdfs'):
                 copyout.copy_out_files(target_dir)
             if config.get_boolean('copyout', 'export_tsv'):
@@ -216,17 +209,16 @@ def setup():
                 copyout.dump_custom("inaturalist", target_dir)
                 copyout.dump_custom("catalog of fishes", target_dir)
 
-    # validator.copy_matches("2016_found")
+        # validator.copy_matches("2016_found")
 
-    # dynamic = scan_db.scan_single_doi('10.11646/zootaxa.4205.2.2')
-    # logging.info(f"Score: {dynamic}")
-    # sys.exit(1)
-    #
-    # test_known_good(db)
+        # dynamic = scan_db.scan_single_doi('10.11646/zootaxa.4205.2.2')
+        # logging.info(f"Score: {dynamic}")
+        # sys.exit(1)
+        #
+        # test_known_good(db)
 
         return
     # above line used to be "sys.exit(1)", but it prevents sphinx autodoc from working
-
 
 
 #  testing code - we generate a set of known good papers and test our algorithms against it.

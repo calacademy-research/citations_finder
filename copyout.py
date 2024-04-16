@@ -5,9 +5,11 @@ from utils_mixin import Utils
 from doi_database import DoiDatabase
 import logging
 
+
 class CopyOut(Utils):
-    def __init__(self, year):
+    def __init__(self, year, config):
         self.year = year
+        self.config = config
 
     def get_matches(self):
         """executes query to retrieve rows from two tables - 
@@ -16,7 +18,7 @@ class CopyOut(Utils):
 
         :return: The query results containing matched rows.
         :rtype: list
-        """        
+        """
         sql = f"""select matches.doi, 
                     matches.collection,
                     dois.full_path,
@@ -26,10 +28,15 @@ class CopyOut(Utils):
                     matches.notes, 
                     matches.digital_only 
                     from matches, dois where matches.doi = dois.doi and 
-                    matches.ignore = 0 and
+                    matches.skip != 1 and
                     dois.{self.sql_year_restriction(self.year, self.year)} order by collection,dois.published_date"""
         results = DBConnection.execute_query(sql)
         return results
+
+    def get_textfile_path(self, doi):
+        sql = "SELECT textfile_path FROM collections_papers.scans WHERE doi = %s"
+        result = DBConnection.execute_query(sql, (doi,))
+        return result[0][0] if result and result[0][0] is not None else None
 
     def make_target_dir(self, dest_dir, collection):
         """Creates directories that are 3 layers deep,
@@ -41,7 +48,7 @@ class CopyOut(Utils):
         :type collection: str
         :return: year directory within collection_dir
         :rtype: str
-        """        
+        """
         if not os.path.exists(dest_dir):
             os.makedirs(dest_dir)
 
@@ -62,7 +69,7 @@ class CopyOut(Utils):
         :type collection: str
         :param dest_dir: The destination directory where the file will be copied.
         :type dest_dir: str
-        """        
+        """
         target_dir = self.make_target_dir(dest_dir, collection)
         target = target_dir + f"/{os.path.basename(origin_path)}"
         if not os.path.exists(target):
@@ -76,15 +83,27 @@ class CopyOut(Utils):
 
         :param dest_dir: The destination directory where the files will be copied to, defaults to "./"
         :type dest_dir: str, optional
-        """        
+        """
         for cur_match in self.get_matches():
+            doi = cur_match[0]
             collection = cur_match[1]
             origin_path = cur_match[2]
-            notes = cur_match[6]
             digital_only = bool(cur_match[7])
             if digital_only is True:
                 continue
+
             self._copy_out_file(origin_path, collection, dest_dir)
+            text_path = self.get_textfile_path(doi)
+
+            if self.config.get_string("copyout","copyout_txt") and text_path is not None:
+
+                txt_dir = self.config.get_string("scan","scan_text_directory")
+                suffix = text_path.split("/txt/", 1)[1] if "/txt/" in text_path else ""
+
+                # Combine the new prefix with the suffix to form the new path
+                text_path = os.path.join(txt_dir, suffix)
+                if os.path.exists(text_path):
+                    self._copy_out_file(text_path, collection, dest_dir)
 
     def write_match(self, cur_match, filehandle, db):
         """Write a matched data record to a file.
@@ -99,7 +118,7 @@ class CopyOut(Utils):
         :type filehandle: file
         :param db: An instance of the DoiDatabase class used for retrieving DOI record information.
         :type db: DoiDatabase
-        """        
+        """
         doi = cur_match[0]
         doi_record = db.get_doi(doi)
         collection = cur_match[1]
@@ -130,10 +149,10 @@ class CopyOut(Utils):
 
         :param path: The directory path where the TSV file will be saved. Defaults to "./".
         :type path: str, optional
-        """        
+        """
         if not os.path.exists(path):
             os.makedirs(path)
-        db = DoiDatabase()
+        db = DoiDatabase(self.config)
         filename = f"{path}/matched_{self.year}.tsv"
         fh = open(filename, "w")
         fh.write("doi\tcollection\tjournal_title\ttitle\tpublished_date\tdate_added\tnotes\tdigital_only\n")
@@ -148,11 +167,11 @@ class CopyOut(Utils):
         :type special_note_string: str
         :param path: The directory path where the TSV file will be saved.
         :type path: str
-        """        
+        """
         if not os.path.exists(path):
             os.makedirs(path)
 
-        db = DoiDatabase()
+        db = DoiDatabase(self.config)
         filename = f"{path}/matched_{self.year}_{special_note_string}.tsv"
         fh = open(filename, "w")
         fh.write("doi\tcollection\tjournal_title\ttitle\tpublished_date\tdate_added\tnotes\tdigital_only\n")
