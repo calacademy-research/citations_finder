@@ -87,7 +87,7 @@ class CopyOut(Utils):
             elif target.endswith('.txt'):
                 print(f"Text Already Copied from {origin_path}")
 
-    def generate_text_file_path(self, doi, config):
+    def generate_text_file_path(self, doi):
         """Generates the full file path for the text files based on DOI.
 
         :param doi: The DOI of the paper for which to generate the file path.
@@ -105,7 +105,7 @@ class CopyOut(Utils):
         if len(results) > 0:
             issn, year = results[0]
             # Get the base directory for text files from the config
-            base_path = config.get_string("scan", "scan_text_directory")
+            base_path = self.config.get_string("scan", "scan_text_directory")
             # Constructing the file path
             file_path = os.path.join(base_path, issn, str(year), f"{doi}.txt")
             return file_path
