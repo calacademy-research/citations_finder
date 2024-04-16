@@ -73,8 +73,16 @@ class CopyOut(Utils):
         target_dir = self.make_target_dir(dest_dir, collection)
         target = target_dir + f"/{os.path.basename(origin_path)}"
         if not os.path.exists(target):
-            logging.info(f"New paper: {target}")
+            if target.endswith('.pdf'):
+                print("New Paper")
+            elif target.endswith('.txt'):
+                print("New Text")
             copyfile(origin_path, target)
+        else:
+            if target.endswith('.pdf'):
+                print("Paper Already Copied")
+            elif target.endswith('.txt'):
+                print("Text Already Copied")
 
     def copy_out_files(self, dest_dir="./"):
         """Copies files based on the matched rows retrieved from the 
@@ -104,6 +112,8 @@ class CopyOut(Utils):
                 text_path = os.path.join(txt_dir, suffix)
                 if os.path.exists(text_path):
                     self._copy_out_file(text_path, collection, dest_dir)
+                else:
+                    print(f"  Missing text file: {text_path}")
 
     def write_match(self, cur_match, filehandle, db):
         """Write a matched data record to a file.
