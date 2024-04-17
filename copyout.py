@@ -128,10 +128,10 @@ class CopyOut(Utils):
             doi = cur_match[0]
             collection = cur_match[1]
             origin_path = self.generate_file_path(doi,"pdf")
-            digital_only = bool(cur_match[7])
-            if digital_only is True:
-                print("Digital only")
-                continue
+            # digital_only = bool(cur_match[7])
+            # if digital_only is True:
+            #     print("Digital only")
+            #     continue
 
             self._copy_out_file(origin_path, collection, dest_dir)
 
