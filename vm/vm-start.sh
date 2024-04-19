@@ -66,7 +66,9 @@ if [[ $vmStatus ]]; then
     # Execute nested SSH command to set up the tunnel from collectionsdb to the VM
     ssh -o StrictHostKeyChecking=no -t admin@collectionsdb.calacademy.org $command
 
-    echo "Tunnel established for $uniqueVmName to collectionsdb... now running container"
+    echo "Tunnel established for $uniqueVmName to collectionsdb... now building container"
+    ssh -o StrictHostKeyChecking=no $adminUsername@$IP_ADDRESS "sudo docker build -t citations_finder /opt/citations_finder/"
+    echo "Build complete, running instances"
 
     # Run Docker container
     instances=2

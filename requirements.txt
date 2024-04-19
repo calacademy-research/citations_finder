@@ -32,3 +32,4 @@ tabula-py
 PyPDF2
 JPype1
 pymysql
+bs4
