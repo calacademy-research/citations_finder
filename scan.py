@@ -304,7 +304,7 @@ class Scan:
 
         return all_name_variations
 
-    @classmethod
+    # @classmethod
     # def _get_collection_manager_names(cls):
     #     """Retrieves a list of collection manager names from the configuration,
     #     processes them for various variations, and returns a list of tuples containing
