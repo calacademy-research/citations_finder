@@ -179,7 +179,8 @@ class Scan:
 
 
 
-    def _run_converter(self, path):
+    def _run_converter(self):
+        path = self._get_textfile_path()
         directory = os.path.dirname(path)
         if not os.path.exists(directory):
             os.makedirs(directory)
