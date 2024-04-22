@@ -179,7 +179,7 @@ class Scan:
 
 
 
-    def _create_textfile_path(self, path):
+    def _run_converter(self, path):
         directory = os.path.dirname(path)
         if not os.path.exists(directory):
             os.makedirs(directory)
@@ -198,7 +198,6 @@ class Scan:
                                              "RESEARCH PAPER", "literature cited", "ЛИТЕРАТУРА"])
 
             text_file_path = self._get_textfile_path()
-            self._create_textfile_path(text_file_path)
             with open(text_file_path, 'w') as file:
                 file.write(text)
             self.textfile_path = text_file_path
@@ -206,8 +205,12 @@ class Scan:
             logging.error(f"RecursionError occurred while processing {pdf_path}: {e}")
 
 
+
+
     def _run_converter_with_timeout(self):
-        converter_thread = threading.Thread(target=self._run_converter_with_timeout)
+        converter_thread = threading.Thread(target=self._run_converter)
+
+
         converter_thread.start()
         timeout_minutes = 10
         converter_thread.join(timeout=(60 * timeout_minutes))
