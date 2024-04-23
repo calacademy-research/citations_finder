@@ -276,6 +276,8 @@ class Scan:
                 # Initials + Last
                 all_name_variations.append((f"{' '.join(initials[:-1])}. {last_part}", score))
                 all_name_variations.append((f"{''.join(initials[:-1])}. {last_part}", score))
+                all_name_variations.append((f"{''.join(initials[:-1])} {last_part}", score))
+
                 # First Initial + Middle Initial + Last
                 if middle_parts:
                     all_name_variations.append(
@@ -286,6 +288,8 @@ class Scan:
                         (f"{first_part[0]}.{''.join([m[0] for m in middle_parts])}.{last_part}", score))
                     all_name_variations.append(
                         (f"{first_part[0]}.{''.join([m[0] for m in middle_parts])}. {last_part}", score))
+                    all_name_variations.append(
+                        (f"{first_part[0]}.{''.join([m[0] for m in middle_parts])} {last_part}", score))
                 # Initials only (too many hits)
                 # all_name_variations.append((f"{' '.join(initials)}", score))
                 # all_name_variations.append((f"{''.join(initials)}", score))
