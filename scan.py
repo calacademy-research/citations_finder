@@ -286,9 +286,9 @@ class Scan:
                         (f"{first_part[0]}.{''.join([m[0] for m in middle_parts])}.{last_part}", score))
                     all_name_variations.append(
                         (f"{first_part[0]}.{''.join([m[0] for m in middle_parts])}. {last_part}", score))
-                # Initials only
-                all_name_variations.append((f"{' '.join(initials)}", score))
-                all_name_variations.append((f"{''.join(initials)}", score))
+                # Initials only (too many hits)
+                # all_name_variations.append((f"{' '.join(initials)}", score))
+                # all_name_variations.append((f"{''.join(initials)}", score))
 
                 # Handle cases with dots and without for each part
                 for i in range(1, len(middle_parts) + 1):
