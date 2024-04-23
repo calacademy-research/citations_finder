@@ -256,7 +256,7 @@ class Scan:
     @classmethod
     def _get_collection_manager_names(cls):
         collection_manager_names = cls.config.get_list('scan_search_keys', 'collection_manager_names')
-        all_name_variations = []
+        all_name_variations = set()
         for test_string, score in collection_manager_names:
             test_string = test_string.lower()
             name_parts = test_string.split()
