@@ -262,7 +262,7 @@ class Scan:
             name_parts = test_string.split()
             # Case 1: last name only
             if len(name_parts) == 1:
-                all_name_variations.append((test_string, score))
+                all_name_variations.add((test_string, score))
             else:
                 first_part = name_parts[0]
                 last_part = name_parts[-1]
@@ -270,45 +270,45 @@ class Scan:
                 initials = [p[0] for p in name_parts]
 
                 # Full name
-                all_name_variations.append((' '.join(name_parts), score))
+                all_name_variations.add((' '.join(name_parts), score))
                 # First + Last
-                all_name_variations.append((f"{first_part} {last_part}", score))
+                all_name_variations.add((f"{first_part} {last_part}", score))
                 # Initials + Last
-                all_name_variations.append((f"{' '.join(initials[:-1])}. {last_part}", score))
-                all_name_variations.append((f"{''.join(initials[:-1])}. {last_part}", score))
-                all_name_variations.append((f"{''.join(initials[:-1])} {last_part}", score))
+                all_name_variations.add((f"{' '.join(initials[:-1])}. {last_part}", score))
+                all_name_variations.add((f"{''.join(initials[:-1])}. {last_part}", score))
+                all_name_variations.add((f"{''.join(initials[:-1])} {last_part}", score))
 
                 # First Initial + Middle Initial + Last
                 if middle_parts:
-                    all_name_variations.append(
+                    all_name_variations.add(
                         (f"{first_part[0]}. {' '.join([m[0] for m in middle_parts])}. {last_part}", score))
-                    all_name_variations.append(
+                    all_name_variations.add(
                         (f"{first_part[0]} {' '.join([m[0] for m in middle_parts])} {last_part}", score))
-                    all_name_variations.append(
+                    all_name_variations.add(
                         (f"{first_part[0]}.{''.join([m[0] for m in middle_parts])}.{last_part}", score))
-                    all_name_variations.append(
+                    all_name_variations.add(
                         (f"{first_part[0]}.{''.join([m[0] for m in middle_parts])}. {last_part}", score))
-                    all_name_variations.append(
+                    all_name_variations.add(
                         (f"{first_part[0]}.{''.join([m[0] for m in middle_parts])} {last_part}", score))
                 # Initials only (too many hits)
-                # all_name_variations.append((f"{' '.join(initials)}", score))
-                # all_name_variations.append((f"{''.join(initials)}", score))
+                # all_name_variations.add((f"{' '.join(initials)}", score))
+                # all_name_variations.add((f"{''.join(initials)}", score))
 
                 # Handle cases with dots and without for each part
                 for i in range(1, len(middle_parts) + 1):
                     middle_initials = [p[0] for p in middle_parts[:i]]
                     without_middle = ' '.join([first_part, ' '.join(middle_initials), last_part])
                     with_dots = ' '.join([f"{p[0]}." for p in name_parts[:-1]]) + ' ' + last_part
-                    all_name_variations.append((without_middle, score))
-                    all_name_variations.append((with_dots, score))
+                    all_name_variations.add((without_middle, score))
+                    all_name_variations.add((with_dots, score))
 
                     # Combining middle initials without space
                     combined_middle = ''.join(middle_initials)
                     combined_with_dots = f"{first_part[0]}." + ''.join(
                         [f"{m}." for m in combined_middle]) + f" {last_part}"
                     combined_without_dots = f"{first_part[0]}" + combined_middle + f" {last_part}"
-                    all_name_variations.append((combined_with_dots, score))
-                    all_name_variations.append((combined_without_dots, score))
+                    all_name_variations.add((combined_with_dots, score))
+                    all_name_variations.add((combined_without_dots, score))
 
         return all_name_variations
 
