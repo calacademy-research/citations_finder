@@ -106,7 +106,7 @@ class ScanDatabase(Utils):
 
         while True:
             if not rescore:
-                sql = self._generate_select_sql(start_year, end_year, None, True, batch_size, offset)
+                sql = self.doi_db.generate_select_sql(start_year, end_year, None, True, batch_size, offset)
                 dois = DoiFactory(sql).dois
             else:
                 dois = self.doi_db.get_dois(start_year=start_year, end_year=end_year, journal_issn=None,

@@ -226,7 +226,7 @@ class DoiDatabase(Utils):
                 logging.info(report.report(journal=issn, summary=False))
             self.download_dois(start_year, end_year, journal=journal, issn=issn)
 
-    def _generate_select_sql(self, start_year, end_year, journal_issn, downloaded, limit=None, offset=None):
+    def generate_select_sql(self, start_year, end_year, journal_issn, downloaded, limit=None, offset=None):
         """Generate an SQL query to select DOI entries from the database -> dois table.
         Generate an SQL query to select DOI entries from the database -> dois table.
 
@@ -293,7 +293,7 @@ class DoiDatabase(Utils):
         :rtype: List[DoiEntry]
         """
 
-        sql = self._generate_select_sql(start_year, end_year, journal_issn, downloaded, limit, offset)
+        sql = self.generate_select_sql(start_year, end_year, journal_issn, downloaded, limit, offset)
         dois = DoiFactory(sql).dois
         return dois
 
@@ -382,7 +382,7 @@ class DoiDatabase(Utils):
         :param issn: The ISSN (International Standard Serial Number) used as a filter for DOI entries. If True, the ISSN will be used to filter DOI entries; if False, it will not be used for filtering.
         :type issn: bool
         """        
-        select_dois = self._generate_select_sql(start_year, end_year, issn, downloaded=False)
+        select_dois = self.generate_select_sql(start_year, end_year, issn, downloaded=False)
         downloaders = Downloaders()
         logging.info(f"SQL: {select_dois}")
 
