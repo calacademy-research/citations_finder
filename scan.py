@@ -435,7 +435,7 @@ class Scan:
 
     def _scan_with_regex(self, regex, score_per_line, ok_after_references, do_score=True):
         results = []
-        logging.debug(f"Scanning with regex: {regex}")
+        # logging.debug(f"Scanning with regex: {regex}")
         found_count = 0
         with open(self._get_textfile_path(), "r") as a_file:
             lines = [line.lower().strip() for line in a_file if line.strip()]
