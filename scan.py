@@ -407,7 +407,7 @@ class Scan:
         collection_manager_names = Scan._get_collection_manager_names()
 
         string_set_pre_reference = Scan._get_scored_strings()
-        string_set_pre_reference = string_set_pre_reference + collection_manager_names
+        string_set_pre_reference = list(string_set_pre_reference) + list(collection_manager_names)
         self._scan_keywords(string_set_pre_reference, ok_after_references=False)
 
         string_set_post_reference = collection_manager_names
