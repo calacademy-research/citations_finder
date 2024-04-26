@@ -137,3 +137,5 @@ dmypy.json
 # passwords
 vm/vm_passwords.yml
 
+
+.DS_Store

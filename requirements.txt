@@ -33,3 +33,4 @@ PyPDF2
 JPype1
 pymysql
 bs4
+opencv-python
