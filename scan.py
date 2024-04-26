@@ -277,7 +277,6 @@ class Scan:
                 all_name_variations.add((f"{' '.join(initials[:-1])}. {last_part}", score))
                 all_name_variations.add((f"{''.join(initials[:-1])}. {last_part}", score))
                 all_name_variations.add((f"{''.join(initials[:-1])} {last_part}", score))
-                print(f"stop 1: {all_name_variations}")
                 # First Initial + Middle Initial + Last
                 if middle_parts:
                     print("There are middle parts!")
@@ -291,7 +290,6 @@ class Scan:
                         (f"{first_part[0]}.{''.join([m[0] for m in middle_parts])}. {last_part}", score))
                     all_name_variations.add(
                         (f"{first_part[0]}.{''.join([m[0] for m in middle_parts])} {last_part}", score))
-                print(f"stop 2: {all_name_variations}")
 
                 # Initials only (too many hits)
                 # all_name_variations.add((f"{' '.join(initials)}", score))
@@ -312,7 +310,6 @@ class Scan:
                     combined_without_dots = f"{first_part[0]}" + combined_middle + f" {last_part}"
                     all_name_variations.add((combined_with_dots, score))
                     all_name_variations.add((combined_without_dots, score))
-                print(f"stop 3: {all_name_variations}")
 
         return all_name_variations
 
