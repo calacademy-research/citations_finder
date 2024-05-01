@@ -108,6 +108,7 @@ class Scan:
         """
         self.textfile_path = None
         self.broken_converter = None
+        # doi_path = os.path.join(doi_object.PDF_DIRECTORY, doi_object.full_path)
         if doi_object.check_and_update_file_path_variables() is False:
             raise FileNotFoundError(
                 f"Missing PDF for doi {doi_object.doi}. path would be {doi_object.generate_file_path()} title: {doi_object.get_title()}")
@@ -186,7 +187,7 @@ class Scan:
             os.makedirs(directory)
 
         try:
-            pdf_path = f"{os.getcwd()}/{self.doi_object.full_path}"
+            pdf_path = self.doi_object.full_path
             text = self.extract_text_from_pdf(pdf_path)
             tables = self.extract_tables_from_pdf(pdf_path)
 
