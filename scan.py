@@ -278,9 +278,9 @@ class Scan:
                 all_name_variations.add((f"{' '.join(initials[:-1])}. {last_part}", score))
                 all_name_variations.add((f"{''.join(initials[:-1])}. {last_part}", score))
                 all_name_variations.add((f"{''.join(initials[:-1])} {last_part}", score))
-
                 # First Initial + Middle Initial + Last
                 if middle_parts:
+                    print("There are middle parts!")
                     all_name_variations.add(
                         (f"{first_part[0]}. {' '.join([m[0] for m in middle_parts])}. {last_part}", score))
                     all_name_variations.add(
@@ -291,6 +291,7 @@ class Scan:
                         (f"{first_part[0]}.{''.join([m[0] for m in middle_parts])}. {last_part}", score))
                     all_name_variations.add(
                         (f"{first_part[0]}.{''.join([m[0] for m in middle_parts])} {last_part}", score))
+
                 # Initials only (too many hits)
                 # all_name_variations.add((f"{' '.join(initials)}", score))
                 # all_name_variations.add((f"{''.join(initials)}", score))
@@ -312,6 +313,10 @@ class Scan:
                     all_name_variations.add((combined_without_dots, score))
 
         return all_name_variations
+
+    @property
+    def __class__(self):
+        return super().__class__
 
     # @classmethod
     # def _get_collection_manager_names(cls):
@@ -367,17 +372,6 @@ class Scan:
         string_set_pre_reference = cls.config.get_list('scan_search_keys', 'scored_strings')
         return string_set_pre_reference
 
-    @classmethod
-    def get_regex_score_tuples(cls):
-        retval = []
-        collection_tag_regex =  cls.config.get_string('scan_search_keys','collections_regex_match')
-
-        retval.append((collection_tag_regex, 300))
-        for regex_tuple in Scan._get_scored_strings() + Scan._get_collection_manager_names():
-            regex = regex_tuple[0].lower()
-            retval.append((regex, regex_tuple[1]))
-
-        return retval
 
     def scan(self, clear_existing_records=False):
         """Perform a scan on the text content, evaluating various conditions to determine a score.
@@ -408,12 +402,8 @@ class Scan:
         collection_manager_names = Scan._get_collection_manager_names()
 
         string_set_pre_reference = Scan._get_scored_strings()
-        string_set_pre_reference = string_set_pre_reference + collection_manager_names
+        string_set_pre_reference = list(string_set_pre_reference) + list(collection_manager_names)
         self._scan_keywords(string_set_pre_reference, ok_after_references=False)
-
-        string_set_post_reference = collection_manager_names
-
-        self._scan_keywords(string_set_post_reference, ok_after_references=True)
 
         if self.score > 0:
             logging.info(f"{self.score}\t{self.title}")
@@ -446,7 +436,7 @@ class Scan:
 
     def _scan_with_regex(self, regex, score_per_line, ok_after_references, do_score=True):
         results = []
-        logging.debug(f"Scanning with regex: {regex}")
+        # logging.debug(f"Scanning with regex: {regex}")
         found_count = 0
         with open(self._get_textfile_path(), "r") as a_file:
             lines = [line.lower().strip() for line in a_file if line.strip()]
