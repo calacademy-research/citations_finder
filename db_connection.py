@@ -21,6 +21,8 @@ class DBConnector(object):
 
     def create_connection(self):
         return mysql.connector.connect(
+            pool_name='mypool',
+            pool_size=10,
             host=self.db_config['database_url'],
             user=self.db_config['database_user'],  # Replace with your username
             password=self.db_config['database_password'],
@@ -28,7 +30,6 @@ class DBConnector(object):
             database=self.db_config['database_name'],  # Replace with your database name
             port=self.db_config['database_port']
         )
-
 
     # For explicitly opening database connection
     def __enter__(self):
@@ -39,6 +40,9 @@ class DBConnector(object):
         self.dbconn.close()
 
 
+db_conn = DBConnector()
+
+
 class DBConnection(object):
     connection = None
 
@@ -46,7 +50,7 @@ class DBConnection(object):
     def get_connection(cls, new=False):
         """Creates return new Singleton database connection"""
         if new or not cls.connection:
-            cls.connection = DBConnector().create_connection()
+            cls.connection = db_conn.create_connection()
         return cls.connection
 
     @classmethod
