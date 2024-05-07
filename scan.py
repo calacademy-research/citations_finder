@@ -415,7 +415,7 @@ class Scan:
         """Scans a set of test strings for keywords using regular expressions and updates the score accordingly.
 
         :param string_set: A set of tuples containing test strings and their corresponding scores.
-        :type string_set: set(tuple(str, int))
+        :type string_set: set(tuple(str, int)) 
         :param ok_after_references: Indicates whether scoring is allowed after references, defaults to False.
         :type ok_after_references: bool, optional
         """

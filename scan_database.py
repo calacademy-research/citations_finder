@@ -118,9 +118,13 @@ class ScanDatabase(Utils):
 
 
 
-            # Instantiate your class and call the method to run parallel scan
-            parallel_scanner = parallel_scan()
-            parallel_scanner.run_parallel_scan(dois=dois)
+            # # Instantiate your class and call the method to run parallel scan
+            # parallel_scanner = parallel_scan()
+
+            # n_jobs = 5
+            # max_nbytes = '1G'
+
+            # parallel_scanner.run_parallel_scan(dois=dois, n_jobs=n_jobs, max_nbytes=max_nbytes)
 
 
 
@@ -137,13 +141,13 @@ class ScanDatabase(Utils):
             
             # Parallel(n_jobs=3, prefer="threads")(delayed(_scan_in_parallel)(doi_entry) for doi_entry in dois)
 
-            # # Processing DOIs
-            # for doi_entry in dois:
-            #     logging.debug (f"  Scanning doi: {doi_entry.doi}")
-            #     try:
-            #         self.do_scan(doi_entry)
-            #     except FileNotFoundError as e:
-            #         logging.error(f"File not found: {e}")
+            # Processing DOIs
+            for doi_entry in dois:
+                logging.debug (f"  Scanning doi: {doi_entry.doi}")
+                try:
+                    self.do_scan(doi_entry)
+                except FileNotFoundError as e:
+                    logging.error(f"File not found: {e}")
 
             total_dois_processed += len(dois)
             offset += batch_size
@@ -221,8 +225,7 @@ class parallel_scan:
                     scan.scan()
         except FileNotFoundError as e:
             logging.error(f"File not found: {e}")
-    def run_parallel_scan(self, dois):
-        # Parallel(n_jobs=2, prefer="threads", max_nbytes=None)(
-        Parallel(n_jobs=-1, max_nbytes=None)(
+    def run_parallel_scan(self, dois, n_jobs=5, max_nbytes='1G'):
+        Parallel(n_jobs=n_jobs, max_nbytes=max_nbytes)(
             delayed(self._scan_in_parallel)(doi_entry) for doi_entry in dois
         )
