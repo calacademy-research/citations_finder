@@ -267,7 +267,7 @@ class DoiEntry(Utils):
         :rtype: str
         """        
         if path is None:
-            path = os.path.join(self.PDF_DIRECTORY, self.issn, str(self.published_date.year))
+            path = os.path.join(self.PDF_DIRECTORY, "pdf", self.issn, str(self.published_date.year))
         filename = os.path.join(path, self.get_filename_from_doi_entry())
         return filename
 

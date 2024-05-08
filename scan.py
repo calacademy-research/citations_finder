@@ -108,6 +108,7 @@ class Scan:
         """
         self.textfile_path = None
         self.broken_converter = None
+        # doi_path = os.path.join(doi_object.PDF_DIRECTORY, doi_object.full_path)
         if doi_object.check_and_update_file_path_variables() is False:
             raise FileNotFoundError(
                 f"Missing PDF for doi {doi_object.doi}. path would be {doi_object.generate_file_path()} title: {doi_object.get_title()}")
@@ -186,7 +187,7 @@ class Scan:
             os.makedirs(directory)
 
         try:
-            pdf_path = f"{os.getcwd()}/{self.doi_object.full_path}"
+            pdf_path = self.doi_object.full_path
             text = self.extract_text_from_pdf(pdf_path)
             tables = self.extract_tables_from_pdf(pdf_path)
 
@@ -414,7 +415,7 @@ class Scan:
         """Scans a set of test strings for keywords using regular expressions and updates the score accordingly.
 
         :param string_set: A set of tuples containing test strings and their corresponding scores.
-        :type string_set: set(tuple(str, int))
+        :type string_set: set(tuple(str, int)) 
         :param ok_after_references: Indicates whether scoring is allowed after references, defaults to False.
         :type ok_after_references: bool, optional
         """

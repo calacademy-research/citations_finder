@@ -3,6 +3,7 @@ from doi_entry import DoiFactory
 from doi_database import DoiDatabase
 from database_report import DatabaseReport
 from scan_database import ScanDatabase
+from db_connection import DBConnector
 from known_good_papers import KnownGoodPapers
 from scan import Scan
 from validator import Validator
@@ -12,6 +13,8 @@ from copyout import CopyOut
 from crossref_journal_entry import CrossrefJournalEntry
 import journal_finder
 import logging
+
+import os
 
 
 def download_single_doi(doi):
@@ -164,8 +167,16 @@ def setup():
         scan_start_year = config.get_int('scan', 'scan_start_year')
         scan_end_year = config.get_int('scan', 'scan_end_year')
         rescore = config.get_boolean('scan', 'rescore')
+        # parallelize = config.get_boolean('scan', 'parallelize')
 
         scan_db.scan_pdfs(scan_start_year, scan_end_year, rescore=rescore)
+
+
+
+
+
+
+
 
     if config.get_boolean('scan_for_specimen_ids', 'enabled'):
         print("Scan for specimen ids...")

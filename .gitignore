@@ -1,6 +1,7 @@
 .idea
 txt/
 pdf/
+publish/
 config.ini
 unpaywall_cache
 doi_database.db
@@ -82,6 +83,7 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+.ipynb
 
 # IPython
 profile_default/
@@ -137,3 +139,5 @@ dmypy.json
 # passwords
 vm/vm_passwords.yml
 
+
+.DS_Store

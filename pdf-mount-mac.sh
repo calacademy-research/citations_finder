@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 RCLONE_CONFIG_DIR="$HOME/.config/rclone"
 RCLONE_CONFIG_FILE="$RCLONE_CONFIG_DIR/rclone.conf"
 MOUNT_DIR="/Volumes/pdf"
-RCLONE_BIN="$PWD/rclone-v1.65.0-osx-amd64/rclone"
+RCLONE_BIN="/usr/local/bin/rclone"
 VM_PASSWORDS_FILE="./vm/vm_passwords.yml"
 
 # Obtain the current user's UID and GID
@@ -49,7 +49,7 @@ sudo umount "$MOUNT_DIR"
 [ ! -d "$MOUNT_DIR" ] && sudo mkdir -p "$MOUNT_DIR" && sudo chmod 0755 "$MOUNT_DIR"
 
 # Mount pdf-cloud using rclone with user write permissions and friendly file creation
-#sudo $RCLONE_BIN mount pdf-cloud:citations-finder-pdfs "$MOUNT_DIR" --default-permissions --allow-other --umask 002 --file-perms 0666 --dir-perms 0777 --daemon
+# sudo $RCLONE_BIN mount pdf-cloud:citations-finder-pdfs "$MOUNT_DIR" --default-permissions --allow-other --umask 002 --file-perms 0666 --dir-perms 0777 --daemon
 runme="sudo -E $RCLONE_BIN mount pdf-cloud:citations-finder-pdfs "$MOUNT_DIR" --default-permissions --allow-other --umask 002 --file-perms 0666 --dir-perms 0777 --uid $USER_UID --gid $USER_GID --daemon"
 #echo $runme
 `$runme`

@@ -1,7 +1,7 @@
 from db_connection import DBConnection
 from scan import Scan
 from utils_mixin import Utils
-from doi_database import DoiFactory
+from doi_entry import DoiFactory
 import logging
 import random
 from scan import RecordNotFoundException
@@ -116,6 +116,31 @@ class ScanDatabase(Utils):
                 break  # No more DOIs to process
             random.shuffle(dois)
 
+
+
+            # # Instantiate your class and call the method to run parallel scan
+            # parallel_scanner = parallel_scan()
+
+            # n_jobs = 5
+            # max_nbytes = '1G'
+
+            # parallel_scanner.run_parallel_scan(dois=dois, n_jobs=n_jobs, max_nbytes=max_nbytes)
+
+
+
+
+        
+            # ------------ PARALLELIZATION
+            # def _scan_in_parallel(doi_entry):
+            #     logging.debug (f"  Scanning doi: {doi_entry.doi}")
+            #     try:
+            #         self.do_scan(doi_entry)
+            #     except FileNotFoundError as e:
+            #         logging.error(f"File not found: {e}")
+
+            
+            # Parallel(n_jobs=3, prefer="threads")(delayed(_scan_in_parallel)(doi_entry) for doi_entry in dois)
+
             # Processing DOIs
             for doi_entry in dois:
                 logging.debug (f"  Scanning doi: {doi_entry.doi}")
@@ -179,3 +204,28 @@ class ScanDatabase(Utils):
 
 
 
+
+from joblib import Parallel, delayed
+import multiprocess as mp
+
+from db_connection import DBConnector
+class parallel_scan:
+    def __init__(self):
+        # Initialize your DBConnector and other setup
+        self.db_connector = DBConnector()
+
+    def _scan_in_parallel(self, doi_entry):
+        logging.debug(f"Scanning doi: {doi_entry.doi}")
+        try:
+            # Perform any necessary database operations using DBConnection.execute_query() here
+            # Example: DBConnection.execute_query("SELECT * FROM your_table WHERE doi = %s", (doi_entry.doi,))
+            scan = Scan(doi_entry)
+            if scan.score is None:
+                if scan.broken_converter is not True:
+                    scan.scan()
+        except FileNotFoundError as e:
+            logging.error(f"File not found: {e}")
+    def run_parallel_scan(self, dois, n_jobs=5, max_nbytes='1G'):
+        Parallel(n_jobs=n_jobs, max_nbytes=max_nbytes)(
+            delayed(self._scan_in_parallel)(doi_entry) for doi_entry in dois
+        )
