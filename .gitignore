@@ -137,3 +137,4 @@ dmypy.json
 # passwords
 vm/vm_passwords.yml
 
+pdf
