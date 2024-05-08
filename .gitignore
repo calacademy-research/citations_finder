@@ -137,3 +137,5 @@ dmypy.json
 # passwords
 vm/vm_passwords.yml
 
+pdf
+used_journals_only_file.tsv

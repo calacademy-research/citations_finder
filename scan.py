@@ -186,7 +186,7 @@ class Scan:
             os.makedirs(directory)
 
         try:
-            pdf_path = f"{os.getcwd()}/{self.doi_object.full_path}"
+            pdf_path = self.doi_object.full_path
             text = self.extract_text_from_pdf(pdf_path)
             tables = self.extract_tables_from_pdf(pdf_path)
 
