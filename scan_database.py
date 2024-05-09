@@ -5,6 +5,9 @@ from doi_database import DoiFactory
 import logging
 import random
 from scan import RecordNotFoundException
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import as_completed
+import os
 
 class ScanDatabase(Utils):
 
@@ -81,6 +84,16 @@ class ScanDatabase(Utils):
             if scan.broken_converter is not True:
                 scan.scan()
 
+    def process_doi(self, doi_entry):
+        logging.debug(f"Scanning doi: {doi_entry.doi}")
+        try:
+            scan = Scan(doi_string=doi_entry.doi)
+            scan.scan(clear_existing_records=True)
+        except FileNotFoundError as e:
+            logging.error(f"File not found: {e}")
+        except Exception as e:
+            logging.error(f"Error processing DOI {doi_entry.doi}: {e}")
+
     def scan_pdfs(self, start_year, end_year, rescore=False, directory="./"):
         """Scans PDFs for DOIs within the specified year range. It retrieves DOIs that 
         have been downloaded but not yet scanned.
@@ -101,32 +114,38 @@ class ScanDatabase(Utils):
         batch_size = 500
         offset = 0
         total_dois_processed = 0
+        num_workers = os.cpu_count()  # Number of CPUs for parallel processing
 
-        logging.info("  Loading entries from database...")
+        logging.info("Loading entries from database...")
 
-        while True:
-            if not rescore:
-                sql = self.doi_db.generate_select_sql(start_year, end_year, None, True, batch_size, offset)
-                dois = DoiFactory(sql).dois
-            else:
-                dois = self.doi_db.get_dois(start_year=start_year, end_year=end_year, journal_issn=None,
-                                            downloaded=True, limit=batch_size, offset=offset)
+        with ProcessPoolExecutor(max_workers=num_workers) as executor:
+            while True:
+                if not rescore:
+                    sql = self.doi_db.generate_select_sql(start_year, end_year, None, True, batch_size, offset)
+                    dois = DoiFactory(sql).dois
+                else:
+                    dois = self.doi_db.get_dois(start_year=start_year, end_year=end_year, journal_issn=None,
+                                                downloaded=True, limit=batch_size, offset=offset)
 
-            if not dois:
-                break  # No more DOIs to process
-            random.shuffle(dois)
+                if not dois:
+                    break  # No more DOIs to process
+                random.shuffle(dois)
 
-            # Processing DOIs
-            for doi_entry in dois:
-                logging.debug (f"  Scanning doi: {doi_entry.doi}")
-                try:
-                    self.do_scan(doi_entry)
-                except FileNotFoundError as e:
-                    logging.error(f"File not found: {e}")
+                # Submit DOIs to the executor for processing
+                future_to_doi = {executor.submit(self.process_doi, doi_entry): doi_entry for doi_entry in dois}
 
-            total_dois_processed += len(dois)
-            offset += batch_size
-            logging.info(f"Processed {total_dois_processed} DOIs so far")
+                # Process future results as they complete
+                for future in as_completed(future_to_doi):
+                    try:
+                        future.result()  # Wait for the result to make sure no exceptions are thrown
+                    except Exception as exc:
+                        doi_entry = future_to_doi[future]
+                        logging.error(f"DOI {doi_entry.doi} generated an exception: {exc}")
+
+                total_dois_processed += len(dois)
+                offset += batch_size
+                logging.info(f"Processed {total_dois_processed} DOIs so far")
+
 
         logging.info("All DOIs processed")
 
