@@ -7,7 +7,8 @@ cd "$(dirname "$0")"
 RCLONE_CONFIG_DIR="$HOME/.config/rclone"
 RCLONE_CONFIG_FILE="$RCLONE_CONFIG_DIR/rclone.conf"
 MOUNT_DIR="/Volumes/pdf"
-RCLONE_BIN="$PWD/rclone-v1.65.0-osx-amd64/rclone"
+RCLONE_BIN="/usr/local/bin/rclone"
+# RCLONE_BIN="$PWD/rclone-v1.65.0-osx-amd64/rclone"
 VM_PASSWORDS_FILE="./vm/vm_passwords.yml"
 
 # Obtain the current user's UID and GID

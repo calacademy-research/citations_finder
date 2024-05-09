@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from doi_entry import DoiFactory
 from doi_database import DoiDatabase
 from database_report import DatabaseReport
