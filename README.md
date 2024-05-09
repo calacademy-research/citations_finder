@@ -221,6 +221,8 @@ Currently only tested on mac. create a virtual environment using the requirement
 
 * Generalize to work on windows - use os.path.join instead of slashes using (os.path.sep) and os.path.join.
 
+* Change __full_path__ field name in doi database table to __relative_path__ and propagate change across package
+
 Can't download these; it should work! 10.3390/plants11071002 10.3390/plants11081024 10.3390/plants11081012 are
 similar.
 
