@@ -269,8 +269,6 @@ class DoiEntry(Utils):
         if path is None:
             path = os.path.join(self.PDF_DIRECTORY, self.issn, str(self.published_date.year))
         filename = os.path.join(path, self.get_filename_from_doi_entry())
-
-
         return filename
 
     def check_and_update_file_path_variables(self, path=None):
