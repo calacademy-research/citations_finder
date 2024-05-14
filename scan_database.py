@@ -7,7 +7,7 @@ import random
 from scan import RecordNotFoundException
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import as_completed
-import os
+import os,sys
 
 class ScanDatabase(Utils):
 
@@ -117,7 +117,7 @@ class ScanDatabase(Utils):
         num_workers = os.cpu_count()  # Number of CPUs for parallel processing
         max_workers = self.config.get_int('scan','max_pdf_conversion_threads')
         logging.info("Loading entries from database...")
-        num_workers = max(num_workers,max_workers)
+        num_workers = min(num_workers,max_workers)
         with ProcessPoolExecutor(max_workers=num_workers) as executor:
             while True:
                 if not rescore:
